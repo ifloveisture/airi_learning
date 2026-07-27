@@ -1,0 +1,408 @@
+{
+  "meta": {
+    "scannedAt": "2026-07-27T13:42:08.386Z",
+    "filesScanned": 3209,
+    "packageCount": 42,
+    "repoRoot": "E:/demo/airi_learning",
+    "domain": "learning/共享包图",
+    "excludeFromFileScan": [
+      "learning/",
+      "node_modules",
+      "dist",
+      ".git",
+      "coverage",
+      ".turbo",
+      "out",
+      "release",
+      ".histoire",
+      "artifacts"
+    ],
+    "scoreFormula": "depConsumers*100 + files*3 + min(importHits,400)",
+    "columns": {
+      "depConsumers": "workspace package.json 直接依赖次数",
+      "files": "触及文件数",
+      "importHits": "包名或 packages/<dir> 命中次数",
+      "score": "排序用综合分"
+    }
+  },
+  "rows": [
+    {
+      "dir": "ui",
+      "name": "@proj-airi/ui",
+      "desc": "A collection of UI components that used by Project AIRI",
+      "depConsumers": 15,
+      "importHits": 290,
+      "files": 249,
+      "score": 2537
+    },
+    {
+      "dir": "stage-ui",
+      "name": "@proj-airi/stage-ui",
+      "desc": "Shared core for stage",
+      "depConsumers": 8,
+      "importHits": 819,
+      "files": 286,
+      "score": 2058
+    },
+    {
+      "dir": "server-sdk",
+      "name": "@proj-airi/server-sdk",
+      "desc": "Client-side SDK implementation for connecting to AIRI server components and runtimes",
+      "depConsumers": 16,
+      "importHits": 102,
+      "files": 82,
+      "score": 1948
+    },
+    {
+      "dir": "stage-shared",
+      "name": "@proj-airi/stage-shared",
+      "desc": "Shared",
+      "depConsumers": 11,
+      "importHits": 205,
+      "files": 176,
+      "score": 1833
+    },
+    {
+      "dir": "i18n",
+      "name": "@proj-airi/i18n",
+      "desc": "Internationalization (i18n) locales and utilities for Project AIRI",
+      "depConsumers": 8,
+      "importHits": 40,
+      "files": 32,
+      "score": 936
+    },
+    {
+      "dir": "stage-ui-three",
+      "name": "@proj-airi/stage-ui-three",
+      "desc": "A collection of 3D scene components that used by Project AIRI",
+      "depConsumers": 6,
+      "importHits": 40,
+      "files": 28,
+      "score": 724
+    },
+    {
+      "dir": "font-cjkfonts-allseto",
+      "name": "@proj-airi/font-cjkfonts-allseto",
+      "desc": "Essential CSS for font, cjkfonts 全瀨體, used by Project AIRI",
+      "depConsumers": 6,
+      "importHits": 20,
+      "files": 19,
+      "score": 677
+    },
+    {
+      "dir": "font-xiaolai",
+      "name": "@proj-airi/font-xiaolai",
+      "desc": "Essential CSS for font, Xiaolai (小赖字体 / 小賴字體 / シャオライ / Xiaolai Font), used by Project AIRI",
+      "depConsumers": 6,
+      "importHits": 20,
+      "files": 19,
+      "score": 677
+    },
+    {
+      "dir": "ccc",
+      "name": "@proj-airi/ccc",
+      "desc": "",
+      "depConsumers": 6,
+      "importHits": 17,
+      "files": 14,
+      "score": 659
+    },
+    {
+      "dir": "audio",
+      "name": "@proj-airi/audio",
+      "desc": "Audio processing utilities for Project AIRI",
+      "depConsumers": 6,
+      "importHits": 12,
+      "files": 10,
+      "score": 642
+    },
+    {
+      "dir": "plugin-sdk",
+      "name": "@proj-airi/plugin-sdk",
+      "desc": "Plugin SDK for Project AIRI",
+      "depConsumers": 4,
+      "importHits": 83,
+      "files": 39,
+      "score": 600
+    },
+    {
+      "dir": "pipelines-audio",
+      "name": "@proj-airi/pipelines-audio",
+      "desc": "Audio pipeline orchestration for AIRI (capture, VAD, encode, stream)",
+      "depConsumers": 5,
+      "importHits": 27,
+      "files": 22,
+      "score": 593
+    },
+    {
+      "dir": "server-shared",
+      "name": "@proj-airi/server-shared",
+      "desc": "Server shared types, utilities for AIRI server components and runtimes",
+      "depConsumers": 4,
+      "importHits": 64,
+      "files": 43,
+      "score": 593
+    },
+    {
+      "dir": "stream-kit",
+      "name": "@proj-airi/stream-kit",
+      "desc": "Stream utilities for AIRI (queues, streams)",
+      "depConsumers": 5,
+      "importHits": 13,
+      "files": 11,
+      "score": 546
+    },
+    {
+      "dir": "font-chillroundm",
+      "name": "@proj-airi/font-chillroundm",
+      "desc": "Essential CSS for font, ChillRoundM (a.k.a. 寒蝉半圆体), used by Project AIRI",
+      "depConsumers": 5,
+      "importHits": 8,
+      "files": 7,
+      "score": 529
+    },
+    {
+      "dir": "stage-layouts",
+      "name": "@proj-airi/stage-layouts",
+      "desc": "Shared Layouts",
+      "depConsumers": 4,
+      "importHits": 43,
+      "files": 24,
+      "score": 515
+    },
+    {
+      "dir": "stage-ui-live2d",
+      "name": "@proj-airi/stage-ui-live2d",
+      "desc": "Live2D scene components and stores for Project AIRI",
+      "depConsumers": 4,
+      "importHits": 25,
+      "files": 19,
+      "score": 482
+    },
+    {
+      "dir": "plugin-protocol",
+      "name": "@proj-airi/plugin-protocol",
+      "desc": "Plugin protocol event definitions and shared websocket types for Project AIRI",
+      "depConsumers": 3,
+      "importHits": 17,
+      "files": 13,
+      "score": 356
+    },
+    {
+      "dir": "ui-transitions",
+      "name": "@proj-airi/ui-transitions",
+      "desc": "A collection of transition animations that used by Project AIRI",
+      "depConsumers": 3,
+      "importHits": 14,
+      "files": 13,
+      "score": 353
+    },
+    {
+      "dir": "stage-ui-spine",
+      "name": "@proj-airi/stage-ui-spine",
+      "desc": "Spine 2D scene components and stores for Project AIRI",
+      "depConsumers": 3,
+      "importHits": 13,
+      "files": 10,
+      "score": 343
+    },
+    {
+      "dir": "stage-ui-mmd",
+      "name": "@proj-airi/stage-ui-mmd",
+      "desc": "MMD (MikuMikuDance) scene components and stores for Project AIRI",
+      "depConsumers": 3,
+      "importHits": 12,
+      "files": 9,
+      "score": 339
+    },
+    {
+      "dir": "electron-vueuse",
+      "name": "@proj-airi/electron-vueuse",
+      "desc": "VueUse-like composables and helpers for Electron apps",
+      "depConsumers": 1,
+      "importHits": 61,
+      "files": 55,
+      "score": 326
+    },
+    {
+      "dir": "core-agent",
+      "name": "@proj-airi/core-agent",
+      "desc": "Core agent runtime orchestration for AIRI",
+      "depConsumers": 2,
+      "importHits": 37,
+      "files": 23,
+      "score": 306
+    },
+    {
+      "dir": "stage-pages",
+      "name": "@proj-airi/stage-pages",
+      "desc": "Shared Pages",
+      "depConsumers": 2,
+      "importHits": 41,
+      "files": 21,
+      "score": 304
+    },
+    {
+      "dir": "electron-eventa",
+      "name": "@proj-airi/electron-eventa",
+      "desc": "Shared Eventa contracts for Electron IPC",
+      "depConsumers": 2,
+      "importHits": 29,
+      "files": 21,
+      "score": 292
+    },
+    {
+      "dir": "plugin-sdk-tamagotchi",
+      "name": "@proj-airi/plugin-sdk-tamagotchi",
+      "desc": "Tamagotchi-specific DX helpers for Project AIRI plugins",
+      "depConsumers": 2,
+      "importHits": 27,
+      "files": 15,
+      "score": 272
+    },
+    {
+      "dir": "electron-screen-capture",
+      "name": "@proj-airi/electron-screen-capture",
+      "desc": "Screen capture",
+      "depConsumers": 2,
+      "importHits": 18,
+      "files": 14,
+      "score": 260
+    },
+    {
+      "dir": "better-ws",
+      "name": "@proj-airi/better-ws",
+      "desc": "Transport-agnostic reliable WebSocket runtime primitives",
+      "depConsumers": 2,
+      "importHits": 23,
+      "files": 12,
+      "score": 259
+    },
+    {
+      "dir": "server-sdk-shared",
+      "name": "@proj-airi/server-sdk-shared",
+      "desc": "Shared event contracts and types consumed by AIRI server-sdk clients and server-side handlers",
+      "depConsumers": 2,
+      "importHits": 17,
+      "files": 11,
+      "score": 250
+    },
+    {
+      "dir": "font-departure-mono",
+      "name": "@proj-airi/font-departure-mono",
+      "desc": "Essential CSS for font, Departure Mono, used by Project AIRI",
+      "depConsumers": 2,
+      "importHits": 7,
+      "files": 6,
+      "score": 225
+    },
+    {
+      "dir": "server-runtime",
+      "name": "@proj-airi/server-runtime",
+      "desc": "Server runtime implementation for AIRI running in different environments",
+      "depConsumers": 1,
+      "importHits": 23,
+      "files": 16,
+      "score": 171
+    },
+    {
+      "dir": "model-driver-mediapipe",
+      "name": "@proj-airi/model-driver-mediapipe",
+      "desc": "MediaPipe motion capture workshop (experimental) for Project AIRI",
+      "depConsumers": 1,
+      "importHits": 13,
+      "files": 5,
+      "score": 128
+    },
+    {
+      "dir": "server-schema",
+      "name": "@proj-airi/server-schema",
+      "desc": "Server schema for AIRI",
+      "depConsumers": 1,
+      "importHits": 7,
+      "files": 6,
+      "score": 125
+    },
+    {
+      "dir": "cap-vite",
+      "name": "@proj-airi/cap-vite",
+      "desc": "CLI that starts a Vite dev server and runs Capacitor live reload",
+      "depConsumers": 1,
+      "importHits": 5,
+      "files": 4,
+      "score": 117
+    },
+    {
+      "dir": "model-driver-lipsync",
+      "name": "@proj-airi/model-driver-lipsync",
+      "desc": "",
+      "depConsumers": 1,
+      "importHits": 6,
+      "files": 3,
+      "score": 115
+    },
+    {
+      "dir": "core-character",
+      "name": "@proj-airi/core-character",
+      "desc": "Core character pipeline orchestration for AIRI (segmentation, emotion, delay, optional TTS)",
+      "depConsumers": 1,
+      "importHits": 3,
+      "files": 2,
+      "score": 109
+    },
+    {
+      "dir": "ui-loading-screens",
+      "name": "@proj-airi/ui-loading-screens",
+      "desc": "A collection of loading screens that used by Project AIRI",
+      "depConsumers": 0,
+      "importHits": 9,
+      "files": 8,
+      "score": 33
+    },
+    {
+      "dir": "scenarios-stage-tamagotchi-browser",
+      "name": "@proj-airi/scenarios-stage-tamagotchi-browser",
+      "desc": "Vite/Vue scene app for stage tamagotchi browser captures",
+      "depConsumers": 0,
+      "importHits": 18,
+      "files": 5,
+      "score": 33
+    },
+    {
+      "dir": "memory-pgvector",
+      "name": "@proj-airi/memory-pgvector",
+      "desc": "",
+      "depConsumers": 0,
+      "importHits": 8,
+      "files": 7,
+      "score": 29
+    },
+    {
+      "dir": "scenarios-stage-tamagotchi-electron",
+      "name": "@proj-airi/scenarios-stage-tamagotchi-electron",
+      "desc": "Product-owned Electron scenarios for stage-tamagotchi raw screenshot capture",
+      "depConsumers": 0,
+      "importHits": 5,
+      "files": 5,
+      "score": 20
+    },
+    {
+      "dir": "audio-pipelines-transcribe",
+      "name": "@proj-airi/audio-pipelines-transcribe",
+      "desc": "",
+      "depConsumers": 0,
+      "importHits": 2,
+      "files": 2,
+      "score": 8
+    },
+    {
+      "dir": "unocss-preset-fonts",
+      "name": "@proj-airi/unocss-preset-fonts",
+      "desc": "Fonts that are not included by Google Fonts, FontSource but open-source used by Project AIRI",
+      "depConsumers": 0,
+      "importHits": 2,
+      "files": 1,
+      "score": 5
+    }
+  ]
+}
