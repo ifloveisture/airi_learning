@@ -15,8 +15,9 @@
 |------|------|
 | [学习路径](./学习路径.md) | 贡献最小闭环 |
 | [测试与质量门禁](./测试与质量门禁.md) | Vitest · lint · typecheck |
+| [提交与钩子](./提交与钩子.md) | pre-commit · nano-staged · message 约定 |
 | [Eventa与injeca](./Eventa与injeca.md) | 桌宠 DI / IPC 最短读码 |
-| [文案与Crowdin](./文案与Crowdin.md) | `packages/i18n` · Crowdin |
+| [文案与Crowdin](./文案与Crowdin.md) | `packages/i18n` · YAML 策略 · Crowdin |
 | [发布与CI地图](./发布与CI地图.md) | workflows · 各面发布 |
 | [错误处理约定](./错误处理约定.md) | `@moeru/std` · NOTICE 等 |
 

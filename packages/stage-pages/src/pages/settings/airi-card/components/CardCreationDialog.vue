@@ -182,13 +182,13 @@ const speechVoiceOptions = computed(() => {
 // Computed: available artistry provider options
 const artistryProviderOptions = computed(() => {
   return [
-    { value: 'none', label: 'None (Disabled)' },
-    { value: 'comfyui', label: 'ComfyUI' },
+    { value: 'none', label: t('settings.pages.modules.artistry.providers.none.name') },
+    { value: 'comfyui', label: t('settings.pages.modules.artistry.providers.comfyui.name') },
     ...(isCustomProvidersDisabled()
       ? []
       : [
-          { value: 'replicate', label: 'Replicate' },
-          { value: 'nanobanana', label: 'Nano Banana' },
+          { value: 'replicate', label: t('settings.pages.modules.artistry.providers.replicate.name') },
+          { value: 'nanobanana', label: t('settings.pages.modules.artistry.providers.nanobanana.name') },
         ]),
   ]
 })

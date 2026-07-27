@@ -369,8 +369,8 @@ pages:
         scenario: '错误：必须提供一个情境。'
         systemprompt: '错误：请提供系统提示。'
         posthistoryinstructions: '错误：必须提供消息历史后的提示。'
-        invalid_artistry_json: 'Error: Artistry provider options contains invalid JSON.'
-      none: None
+        invalid_artistry_json: '错误：Artistry 提供商选项不是有效的 JSON。'
+      none: 无
     modules: 模块
     name_asc: 名称 (A-Z)
     name_desc: 名称 (Z-A)
@@ -390,14 +390,14 @@ pages:
     systemprompt: 系统提示词
     title: AIRI 角色卡
     try_different_search: 尝试使用其他关键词搜索
-    export: Export
-    exported: Card package exported
-    export_failed: Failed to export card package
-    imported: Card package imported
-    import_missing_file: Card package is missing required files
-    import_invalid_file: Card package file is invalid
+    export: 导出
+    exported: 角色卡包已导出
+    export_failed: 导出角色卡包失败
+    imported: 角色卡包已导入
+    import_missing_file: 角色卡包缺少必要文件
+    import_invalid_file: 角色卡包文件无效
     upload: 上传
-    upload_desc: Click or drag an AIRI card package to import
+    upload_desc: 点击或拖拽 AIRI 角色卡包以导入
   memory:
     description: 存放记忆的地方，以及策略
     title: 记忆体
@@ -514,66 +514,66 @@ pages:
               description: 在检测节拍之前进行预热，以提高准确性
               label: 预热
     artistry:
-      title: Artistry
-      description: Image generation, scene background and drawing.
+      title: Artistry（生图）
+      description: 图像生成、场景背景与绘画。
       page:
-        title: Artistry Provider Configuration
-        description: Select the active backend provider for image generation. Characters can override this in their Card settings.
+        title: Artistry 提供商配置
+        description: 选择用于图像生成的后端提供商。角色可在角色卡设置中覆盖此项。
       providers:
         none:
-          name: None
-          description: Bypass and disable the image generation module globally.
+          name: 无（已禁用）
+          description: 全局跳过并禁用图像生成模块。
         comfyui:
-          name: ComfyUI (Local)
-          description: Use a local ComfyUI instance via WSL for image generation.
+          name: ComfyUI（本地）
+          description: 通过本地 ComfyUI 实例（可经 WSL）进行图像生成。
         replicate:
-          name: Replicate.ai (Cloud)
-          description: Use cloud-based models via the Replicate API.
+          name: Replicate.ai（云端）
+          description: 通过 Replicate API 使用云端模型。
         nanobanana:
-          name: Nano Banana (Preview)
-          description: Use Google AI Studio for image preview and reactions.
+          name: Nano Banana（预览）
+          description: 使用 Google AI Studio 进行图像预览与反应。
       card:
-        description: Configure how AIRI generates images and visual content.
-        comfyui_empty: No ComfyUI workflows configured. Go to Settings → Providers → ComfyUI to upload a workflow template.
-        exposed_fields: '{count} exposed fields'
-        open_on_replicate: Open on Replicate
+        description: 配置 AIRI 如何生成图像与视觉内容。
+        comfyui_empty: 尚未配置 ComfyUI 工作流。请前往 设置 → 提供商 → ComfyUI 上传工作流模板。
+        exposed_fields: '{count} 个开放字段'
+        open_on_replicate: 在 Replicate 上打开
         instruction_sync:
-          title: ComfyUI Instruction Sync
-          description: A specialized prompt is ready for your {workflowName} workflow. Applying this will overwrite current widget instructions so the AI knows how to use this specific template.
-          apply: Apply Recommended Prompt
-          keep: Keep Existing
-      provider: Artistry Provider
+          title: ComfyUI 指令同步
+          description: 已为你的 {workflowName} 工作流准备好专用提示。应用后将覆盖当前挂件指令，以便 AI 知道如何使用该模板。
+          apply: 应用推荐提示
+          keep: 保留现有
+      provider: Artistry 提供商
       spawn_mode:
-        label: Manifestation Mode (Spawn Mode)
-        description: Choose how images are delivered to the interface.
+        label: 呈现模式（Spawn Mode）
+        description: 选择图像如何出现在界面中。
         options:
-          bg: Background Environment
-          inline: Inline Chat
-          widget: Overlay Widget
-          bg_widget: Dual (Background + Widget)
+          bg: 背景环境
+          inline: 聊天内联
+          widget: 浮层挂件
+          bg_widget: 双轨（背景 + 挂件）
       autonomous:
-        title: Cinematic Autonomy (Autonomous Artist)
-        description: When enabled, the "Producer" runs in parallel to the character to decide if a visual is needed. This prevents the character from forgetting to manifest scenes.
-        threshold: Manifestation Threshold
-        threshold_description: Use {min} for aggressive scene creation or {max} to require stronger evidence before generating.
-        threshold_min: Always Generate (0%)
-        threshold_max: Strict (100%)
+        title: 电影式自主（Autonomous Artist）
+        description: 启用后，「制片人」会与角色并行运行，判断是否需要视觉画面，避免角色忘记生成场景。
+        threshold: 呈现阈值阈值
+        threshold_description: 使用 {min} 会更积极地生成场景，使用 {max} 则需要更强依据才会生成。
+        threshold_min: 总是生成（0%）
+        threshold_max: 严格（100%）
       model:
-        label: Artistry Model (Optional Override)
-        description: Model identifier if needed by provider
+        label: Artistry 模型（可选覆盖）
+        description: 提供商需要时填写的模型标识
       prompt-prefix:
-        label: Artistry Prompt Default Prefix
-        description: Pre-pended to every prompt sent to the image generator.
+        label: Artistry 提示默认前缀
+        description: 会前置到每次发给图像生成器的提示词。
       options:
-        label: Artistry Provider Options (JSON)
+        label: Artistry 提供商选项（JSON）
       widget-instructions:
-        label: Widget System Prompt
-        description: Custom instructions for the AI on how to use the generation capabilities.
+        label: 挂件系统提示词
+        description: 自定义 AI 如何使用图像生成能力的说明。
     categories:
       essential: 基础
-      messaging: Messaging
-      gaming: Gaming
-      artistry: Artistry
+      messaging: 消息
+      gaming: 游戏
+      artistry: Artistry（生图）
     consciousness:
       description: 人格设定、使用的模型等配置
       sections:
@@ -991,15 +991,15 @@ pages:
         description: >-
           Transcription (speech-to-text) model providers. e.g. Whisper.cpp, OpenAI, Azure Speech
       artistry:
-        title: Artistry
-        description: Image generation and design model providers. e.g. ComfyUI, Replicate.
+        title: Artistry（生图）
+        description: 图像生成与设计类模型提供商，例如 ComfyUI、Replicate。
         items:
           comfyui:
-            description: Local image generation runner.
+            description: 本地图像生成运行器。
           replicate:
-            description: Cloud-based model inference service.
+            description: 云端模型推理服务。
           nanobanana:
-            description: Google AI Studio Image Preview.
+            description: Google AI Studio 图像预览。
     helpinfo:
       title: 第一次使用？
       description: >
@@ -1088,94 +1088,94 @@ pages:
         settings:
           title: ComfyUI（本地）
           heading: ComfyUI 原生 API
-          description: Connect to your local ComfyUI and bring your own workflows.
+          description: 连接本地 ComfyUI，并使用你自己的工作流。
           info:
             what_you_need:
-              label: What You Need
-              value: ComfyUI running locally or on your network.
+              label: 你需要准备
+              value: 在本机或局域网中运行的 ComfyUI。
             how_to_export:
-              label: How To Export
-              value: Enable Dev Mode → "Save (API Format)".
+              label: 如何导出
+              value: 开启 Dev Mode → "Save (API Format)"。
             scope_boundary:
-              label: Scope Boundary
-              value: Model downloads & node installs are your job.
+              label: 职责边界
+              value: 模型下载与节点安装需自行完成。
           connection:
-            title: Connection
-            connected: Connected
-            failed: Connection failed
-            error_prefix: Error
-            test: Test
-            testing: Testing...
-            unknown_error: Unknown connection error
-            unknown_gpu: Unknown GPU
+            title: 连接
+            connected: 已连接
+            failed: 连接失败
+            error_prefix: 错误
+            test: 测试
+            testing: 测试中...
+            unknown_error: 未知连接错误
+            unknown_gpu: 未知 GPU
             server_url:
-              label: Server URL
-              description: The address where ComfyUI is running
+              label: 服务器地址
+              description: ComfyUI 运行地址
               placeholder: http://localhost:8188
           cors:
-            title: CORS Block Detected
-            description: ComfyUI blocks requests from other applications by default. To allow AIRI to connect, you must start ComfyUI with the `--enable-cors-header "*"` flag.
+            title: 检测到 CORS 拦截
+            description: ComfyUI 默认会阻止来自其他应用的请求。要允许 AIRI 连接，需使用 `--enable-cors-header "*"` 参数启动 ComfyUI。
             command: python main.py --enable-cors-header "*"
           workflows:
-            title: Workflow Templates
-            upload: Upload Workflow
-            cancel_upload: Cancel
-            empty: No workflows uploaded yet. Click "Upload Workflow" to import a workflow_api.json from ComfyUI.
-            exposed_parameters: Exposed Parameters
-            summary: '{nodes} nodes · {fields} exposed fields'
-            remove: Remove
-            config_snippet: Artistry Config Snippet
-            copy_json: Copy JSON
-            paste_hint: Paste this into your AIRI Card artistry config to override these nodes.
+            title: 工作流模板
+            upload: 上传工作流
+            cancel_upload: 取消
+            empty: 尚未上传任何工作流。点击「上传工作流」，导入来自 ComfyUI 的 workflow_api.json。
+            exposed_parameters: 开放参数
+            summary: '{nodes} 个节点 · {fields} 个开放字段'
+            remove: 移除
+            config_snippet: Artistry 配置片段
+            copy_json: 复制 JSON
+            paste_hint: 将此内容粘贴到 AIRI 角色卡的 Artistry 配置中，以覆盖这些节点。
           upload:
-            prompt: Drop or select a workflow_api.json file
-            invalid_json: Invalid JSON
+            prompt: 拖放或选择 workflow_api.json 文件
+            invalid_json: JSON 无效
             workflow_name:
-              label: Workflow Name
-              description: Give this workflow a recognizable name
-              placeholder: e.g. Anime Text2Img
-            select_fields: 'Select fields to expose to the AI agent:'
-            fields_exposed: '{count} field(s) exposed'
-            save: Save Workflow
+              label: 工作流名称
+              description: 为该工作流起一个便于识别的名称
+              placeholder: 例如 AnimeTxt2Img
+            select_fields: '选择要向 AI Agent 开放的字段：'
+            fields_exposed: '已开放 {count} 个字段'
+            save: 保存工作流
       replicate:
         settings:
           title: Replicate.ai
-          heading: Replicate.ai Configuration
-          description: Configure your cloud image generation settings.
+          heading: Replicate.ai 配置
+          description: 配置云端图像生成设置。
           api_key:
             label: API Key
-            description: Your Replicate API token (starts with r8_)
+            description: 你的 Replicate API Token（以 r8_ 开头）
             placeholder: r8_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
           default_model:
-            label: Default Model
-            description: Fallback owner/model string to use if the character card doesn't specify one
+            label: 默认模型
+            description: 角色卡未指定模型时使用的备用 owner/model 字符串
             placeholder: black-forest-labs/flux-schnell
           aspect_ratio:
-            label: Aspect Ratio
-            description: Default image aspect ratio (e.g. 16:9, 1:1, 9:16)
+            label: 宽高比
+            description: 默认图像宽高比（例如 16:9、1:1、9:16）
             placeholder: '16:9'
           inference_steps:
-            label: Inference Steps
-            description: Number of steps for the diffusion process (lower is faster, higher is better quality)
+            label: 推理步数
+            description: 扩散过程的步数（越低越快，越高质量通常更好）
       nanobanana:
         settings:
           title: Nano Banana
-          heading: Nano Banana (Google AI Studio)
-          description: Configure Google Gemini's native image generation capabilities.
+          heading: Nano Banana（Google AI Studio）
+          description: 配置 Google Gemini 原生图像生成能力。
           api_key:
             label: API Key
-            description: Your Google AI Studio API Key
+            description: 你的 Google AI Studio API Key
             placeholder: AIpk...
           preferred_model:
-            label: Preferred Model
-            description: The specific Gemini image preview model to use
+            label: 首选模型
+            description: 要使用的具体 Gemini 图像预览模型
           default_resolution:
-            label: Default Resolution
-            description: The target resolution for generated images
+            label: 默认分辨率
+            description: 生成图像的目标分辨率
           model_options:
-            nano_banana_2: Nano Banana 2 (Gemini 3.1 Flash Image)
-            nano_banana_pro: Nano Banana Pro (Gemini 3 Pro Image)
-            nano_banana: Nano Banana (Gemini 2.5 Flash Image)
+            nano_banana_2: Nano Banana 2（Gemini 3.1 Flash Image）
+            nano_banana_pro: Nano Banana Pro（Gemini 3 Pro Image）
+            nano_banana: Nano Banana（Gemini 2.5 Flash Image）
       deepseek:
         description: DeepSeek.com
         title: 深度求索 DeepSeek
