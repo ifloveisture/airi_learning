@@ -17,9 +17,10 @@
 | [会话与云同步](./会话与云同步.md) | IDB · outbox · `/ws/chat` |
 | [角色卡片](./角色卡片.md) | ccc · airi-card |
 | [模型提供商](./模型提供商.md) | 定义表 · runtime · consciousness |
-| [对话工具](./对话工具.md) | Web Search · Artistry |
+| [对话工具](./对话工具.md) | Web Search · Artistry（须接生图后端，非聊天 LLM） |
+| [ComfyUI 工作流](./ComfyUI工作流.md) | 本地 Artistry：API JSON 模板 · 暴露字段 · 启用步骤 |
 | [长期记忆边界](./长期记忆边界.md) | Stage WIP · TG 向量 · 空壳包 |
 
 ## 能力速览
 
-主路径：流式对话、本地 IDB、意识模型、角色卡、Provider。可启用：Web Search、Artistry、云同步。进行中：Stage 长期记忆 / `memory-pgvector`。
+主路径：流式对话、本地 IDB、意识模型、角色卡、Provider。可启用：Web Search、Artistry（须接生图后端）、云同步。进行中：Stage 长期记忆 / `memory-pgvector`。
