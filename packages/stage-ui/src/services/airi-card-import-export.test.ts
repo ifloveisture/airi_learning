@@ -1,6 +1,6 @@
 import type { ccv3 } from '@proj-airi/ccc'
 
-import type { AiriCard, AiriExtension } from '../stores/modules/airi-card'
+import type { AiriCard, AiriExtension } from '../types/airiCard'
 
 import JSZip from 'jszip'
 
@@ -12,12 +12,24 @@ import { DisplayModelFormat, useDisplayModelsStore } from '../stores/display-mod
 import { exportAiriCardPackage, importAiriCardPackage } from './airi-card-import-export'
 
 describe('airi card package import/export', () => {
+  it('preserves all configured wake pronunciations while excluding local conflict ownership', async () => {
+    setActivePinia(createPinia())
+    const displayModelsStore = useDisplayModelsStore()
+    const card = createCard()
+    card.extensions.airi.defaultAvatarModelId = undefined
+    card.extensions.airi.wakeWords = [{ text: 'AIRI', modelId: 'kws-vocabulary', pronunciations: [['a', 'ri'], ['ai', 'li']] }]
+    const exported = await exportAiriCardPackage({ card, displayModelsStore })
+    const imported = await importAiriCardPackage({ file: new File([exported], 'voice-card.zip'), displayModelsStore })
+    expect(airiFrom(imported).wakeWords).toEqual(card.extensions.airi.wakeWords)
+    expect(airiFrom(imported)).not.toHaveProperty('pronunciationOwners')
+  })
+
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.unstubAllGlobals()
   })
 
-  it('exports sanitized packages and restores display models', async () => {
+  it('exports shareable fields, sanitizes runtime state, and restores display models', async () => {
     const displayModelsStore = useDisplayModelsStore()
     const fetch = vi.fn(async () => new Response('preset-vrm-model'))
     vi.stubGlobal('fetch', fetch)
@@ -46,7 +58,78 @@ describe('airi card package import/export', () => {
     expect(airi.modules.artistry).not.toHaveProperty('workflowId')
     expect(airi.agents).toEqual({})
     expect(displayModelsStore.addDisplayModel).toHaveBeenCalledWith(DisplayModelFormat.VRM, expect.objectContaining({ name: 'AvatarSample_A.vrm' }))
-    expect(airiFrom(imported).modules.displayModelId).toBe('display-model-imported')
+    expect(airiFrom(imported).avatarModels[0]).toMatchObject({ displayModelId: 'display-model-imported', type: 'vrm' })
+    expect(airiFrom(imported).defaultAvatarModelId).toBe(airiFrom(imported).avatarModels[0].id)
+  })
+
+  it('keeps the selected Live2D control policy through package transfer', async () => {
+    const displayModelsStore = useDisplayModelsStore()
+    const card = createCard('local-live2d')
+    card.extensions.airi.avatarModels = [{
+      id: 'selected-avatar-model',
+      displayModelId: 'local-live2d',
+      type: 'live2d',
+      config: { controls: {
+        disabledExpressions: ['smile'],
+        disabledMotions: ['motions/idle.motion3.json'],
+      } },
+    }]
+    vi.spyOn(displayModelsStore, 'getDisplayModel').mockResolvedValue({
+      id: 'local-live2d',
+      format: DisplayModelFormat.Live2dZip,
+      type: 'file',
+      file: new File(['live2d-archive'], 'model.zip'),
+      name: 'model.zip',
+      importedAt: 1,
+    })
+    mockAddDisplayModel(displayModelsStore, 'imported-live2d')
+
+    const exported = await exportAiriCardPackage({ card, displayModelsStore })
+    const zip = await JSZip.loadAsync(await exported.arrayBuffer())
+    expect(await readJson(zip, 'manifest.json')).toMatchObject({
+      resources: { displayModel: { controls: {
+        disabledExpressions: ['smile'],
+        disabledMotions: ['motions/idle.motion3.json'],
+      } } },
+    })
+    expect(airiFrom(await readJson<ccv3.CharacterCardV3>(zip, 'card.json')).avatarModels).toEqual([])
+
+    const imported = await importAiriCardPackage({ file: new File([exported], 'card.zip'), displayModelsStore })
+    expect(airiFrom(imported).avatarModels[0]).toMatchObject({
+      displayModelId: 'imported-live2d',
+      type: 'live2d',
+      config: { controls: {
+        disabledExpressions: ['smile'],
+        disabledMotions: ['motions/idle.motion3.json'],
+      } },
+    })
+    expect(airiFrom(imported).avatarModels[0].id).not.toBe('selected-avatar-model')
+  })
+
+  it('applies the share-field whitelist to externally edited package JSON', async () => {
+    const displayModelsStore = useDisplayModelsStore()
+    const source = exportToJSON(createCard('preset-live2d-1'))
+    source.data.extensions.third_party = { token: 'do-not-import' }
+
+    const imported = await importAiriCardPackage({
+      file: await packageFile(source),
+      displayModelsStore,
+    })
+    const airi = airiFrom(imported)
+
+    expect(imported.data).toMatchObject({
+      name: 'AIRI / Test Card',
+      nickname: 'Tester',
+      character_version: '1.2.3',
+      description: 'Description',
+      creator: '',
+      tags: [],
+      mes_example: '',
+    })
+    expect(imported.data.extensions).not.toHaveProperty('third_party')
+    expect(airi.modules).not.toHaveProperty('activeBackgroundId')
+    expect(airi.modules.artistry).not.toHaveProperty('workflowId')
+    expect(airi.agents).toEqual({})
   })
 
   it('classifies invalid packages', async () => {
@@ -63,6 +146,46 @@ describe('airi card package import/export', () => {
 
     for (const [file, expected] of cases)
       await expect(importAiriCardPackage({ file, displayModelsStore })).rejects.toMatchObject(expected)
+  })
+
+  it('preserves Tachie archives and their compound extension', async () => {
+    const displayModelsStore = useDisplayModelsStore()
+    vi.spyOn(displayModelsStore, 'getDisplayModel').mockResolvedValue({
+      id: 'tachie-model',
+      format: DisplayModelFormat.TachieZip,
+      type: 'file',
+      file: new File(['tachie-model'], 'character.tachie.zip'),
+      name: 'character.tachie.zip',
+      importedAt: 1,
+    })
+    mockAddDisplayModel(displayModelsStore, 'imported-tachie')
+
+    const exported = await exportAiriCardPackage({
+      card: createCard('tachie-model'),
+      displayModelsStore,
+    })
+    const zip = await JSZip.loadAsync(await exported.arrayBuffer())
+    const imported = await importAiriCardPackage({
+      file: new File([exported], 'card.zip'),
+      displayModelsStore,
+    })
+
+    expect(await readJson(zip, 'manifest.json')).toMatchObject({
+      resources: {
+        displayModel: {
+          path: 'models/body-model.tachie.zip',
+          format: DisplayModelFormat.TachieZip,
+          name: 'character.tachie.zip',
+        },
+      },
+    })
+    expect(await zip.file('models/body-model.tachie.zip')?.async('string')).toBe('tachie-model')
+    expect(displayModelsStore.addDisplayModel).toHaveBeenCalledWith(
+      DisplayModelFormat.TachieZip,
+      expect.objectContaining({ name: 'character.tachie.zip' }),
+    )
+    expect(airiFrom(imported).avatarModels[0]).toMatchObject({ displayModelId: 'imported-tachie', type: 'tachie' })
+    expect(airiFrom(imported).defaultAvatarModelId).toBe(airiFrom(imported).avatarModels[0].id)
   })
 })
 
@@ -88,11 +211,12 @@ function createCard(displayModelId = 'preset-vrm-1'): AiriCard {
     tags: ['hidden'],
     extensions: {
       airi: {
+        avatarModels: [{ id: 'selected-avatar-model', displayModelId, type: displayModelId === 'tachie-model' ? 'tachie' : 'vrm', config: {} }],
+        defaultAvatarModelId: 'selected-avatar-model',
         modules: {
           consciousness: { provider: 'openai', model: 'gpt-4o' },
           vision: { provider: 'ollama', model: 'llava' },
           speech: { provider: 'elevenlabs', model: 'eleven', voice_id: 'alloy', pitch: 1 },
-          displayModelId,
           activeBackgroundId: 'background-secret',
           artistry: { provider: 'replicate', model: 'flux', workflowId: 'workflow-secret' },
         },

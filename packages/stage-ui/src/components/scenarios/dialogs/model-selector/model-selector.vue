@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import type { Live2DValidationReport } from '@proj-airi/stage-ui-live2d'
+import type { TachieValidationReport } from '@proj-airi/stage-ui-tachie'
 
 import type { DisplayModel } from '../../../../stores/display-models'
 
 import { validateLive2DZip } from '@proj-airi/stage-ui-live2d'
+import { TACHIE_ARCHIVE_SUFFIX, validateTachieZip } from '@proj-airi/stage-ui-tachie'
 import { Button } from '@proj-airi/ui'
 import { useFileDialog } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, EditableArea, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from 'reka-ui'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Live2DReportModal from './Live2DReportModal.vue'
+import Live2DReportModal from './reports/live2d/modal.vue'
+import TachieReportModal from './tachieReportModal.vue'
 
 import { DisplayModelFormat, useDisplayModelsStore } from '../../../../stores/display-models'
 
@@ -24,25 +27,27 @@ const emits = defineEmits<{
 }>()
 
 const displayModelStore = useDisplayModelsStore()
-const { displayModelsFromIndexedDBLoading, displayModels } = storeToRefs(displayModelStore)
+const { displayModelsFromIndexedDBLoading, displayModels, cloudOnlyModels, syncStatuses, syncErrors } = storeToRefs(displayModelStore)
 const { t } = useI18n()
 
-function handleRemoveModel(model: DisplayModel) {
-  const wasActive = props.selectedModel?.id === model.id
-  displayModelStore.removeDisplayModel(model.id)
-  // Removing the model that is currently on stage must also take it off the
-  // stage; otherwise the scene keeps rendering the already-loaded mesh (its
-  // blob URL stays valid). Switch to the first remaining model, or none.
-  if (wasActive) {
-    const fallback = displayModels.value.find(m => m.id !== model.id)
-    emits('pick', fallback)
-  }
+const listedModels = computed(() => [
+  ...displayModels.value.map(model => ({ id: model.id, name: model.name, format: model.format, previewImage: model.previewImage, cloudOnly: false })),
+  ...cloudOnlyModels.value.map(model => ({ id: model.id, name: model.name, format: model.format as DisplayModelFormat, previewImage: undefined, cloudOnly: true })),
+])
+
+// The card store removes the references to a deleted model. A model that the account
+// keeps stays referenced, because it can download again.
+async function handleRemoveModel(model: { id: string }) {
+  await displayModelStore.removeDisplayModel(model.id)
 }
 
 const highlightDisplayModelCard = ref<string | undefined>(props.selectedModel?.id)
 const showReportModal = ref(false)
 const pendingFile = ref<File | null>(null)
 const validationReport = ref<Live2DValidationReport | null>(null)
+const showTachieReportModal = ref(false)
+const pendingTachieFile = ref<File | null>(null)
+const tachieValidationReport = ref<TachieValidationReport | null>(null)
 
 watch(() => props.selectedModel?.id, (modelId) => {
   highlightDisplayModelCard.value = modelId
@@ -58,7 +63,7 @@ async function handleAddLive2DModel(file: FileList | null) {
   validationReport.value = report
   pendingFile.value = file[0]
 
-  if (report.status === 'VALID' && report.errors.length === 0) {
+  if (report.status === 'VALID') {
     await confirmImport()
     return
   }
@@ -81,19 +86,57 @@ async function confirmImport() {
   pendingFile.value = null
 }
 
-function handleFixError(error: string) {
-  void error
+async function handleAddTachieModel(file: FileList | null) {
+  if (file === null || file.length === 0)
+    return
+
+  const picked = file[0]
+  if (!picked.name.toLowerCase().endsWith(TACHIE_ARCHIVE_SUFFIX))
+    return
+
+  const report = await validateTachieZip(picked)
+  pendingTachieFile.value = picked
+  tachieValidationReport.value = report
+
+  if (report.status === 'VALID') {
+    await confirmTachieImport()
+    return
+  }
+
+  showTachieReportModal.value = true
 }
 
-function handlePick(m: DisplayModel) {
+async function confirmTachieImport() {
+  if (!pendingTachieFile.value || tachieValidationReport.value?.status === 'INVALID')
+    return
+
+  const displayModel = await displayModelStore.addDisplayModel(DisplayModelFormat.TachieZip, pendingTachieFile.value)
+  highlightDisplayModelCard.value = displayModel.id
+  pendingTachieFile.value = null
+  tachieValidationReport.value = null
+}
+
+async function pickById(id: string | undefined) {
+  if (!id)
+    return emits('pick', undefined)
+
+  try {
+    // A cloud-only model downloads here. The dialog stays open on failure and shows the error.
+    emits('pick', await displayModelStore.ensureDisplayModelAvailable(id))
+    emits('close', undefined)
+  }
+  catch (error) {
+    console.error('[model-selector] failed to download the selected model:', error)
+  }
+}
+
+function handlePick(m: { id: string }) {
   highlightDisplayModelCard.value = m.id
-  emits('pick', m)
-  emits('close', undefined)
+  return pickById(m.id)
 }
 
 function handleMobilePick() {
-  emits('pick', displayModels.value.find(model => model.id === highlightDisplayModelCard.value))
-  emits('close', undefined)
+  return pickById(highlightDisplayModelCard.value)
 }
 
 async function handleAddVRMModel(file: FileList | null) {
@@ -162,6 +205,7 @@ const mapFormatRenderer: Record<DisplayModelFormat, string> = {
   [DisplayModelFormat.Live2dDirectory]: 'Live2D',
   [DisplayModelFormat.VRM]: 'VRM',
   [DisplayModelFormat.SpineZip]: 'Spine',
+  [DisplayModelFormat.TachieZip]: 'Tachie',
   [DisplayModelFormat.PMXDirectory]: 'MMD',
   [DisplayModelFormat.PMXZip]: 'MMD',
   [DisplayModelFormat.PMD]: 'MMD',
@@ -170,11 +214,13 @@ const mapFormatRenderer: Record<DisplayModelFormat, string> = {
 const live2dDialog = useFileDialog({ accept: '.zip', multiple: false, reset: true })
 const vrmDialog = useFileDialog({ accept: '.vrm', multiple: false, reset: true })
 const spineDialog = useFileDialog({ accept: '.zip', multiple: false, reset: true })
+const tachieDialog = useFileDialog({ accept: TACHIE_ARCHIVE_SUFFIX, multiple: false, reset: true })
 const mmdDialog = useFileDialog({ accept: '.zip,.pmx,.pmd', multiple: false, reset: true })
 
 live2dDialog.onChange(handleAddLive2DModel)
 vrmDialog.onChange(handleAddVRMModel)
 spineDialog.onChange(handleAddSpineModel)
+tachieDialog.onChange(handleAddTachieModel)
 mmdDialog.onChange(handleAddMMDModel)
 </script>
 
@@ -184,7 +230,11 @@ mmdDialog.onChange(handleAddMMDModel)
       v-model:open="showReportModal"
       :report="validationReport"
       @confirm="confirmImport"
-      @fix-error="handleFixError"
+    />
+    <TachieReportModal
+      v-model:open="showTachieReportModal"
+      :report="tachieValidationReport"
+      @confirm="confirmTachieImport"
     />
 
     <div flex items-center>
@@ -257,6 +307,18 @@ mmdDialog.onChange(handleAddMMDModel)
               >
                 MMD
               </DropdownMenuItem>
+              <DropdownMenuItem
+                :class="[
+                  'data-[disabled]:text-mauve8 relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 leading-none outline-none data-[disabled]:pointer-events-none',
+                  'text-base sm:text-sm',
+                  'data-[highlighted]:bg-primary-300/20 dark:data-[highlighted]:bg-primary-100/20',
+                  'data-[highlighted]:text-primary-400 dark:data-[highlighted]:text-primary-200',
+                ]"
+                transition="colors duration-200 ease-in-out"
+                @click="tachieDialog.open()"
+              >
+                Tachie
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenuPortal>
         </DropdownMenuRoot>
@@ -268,7 +330,7 @@ mmdDialog.onChange(handleAddMMDModel)
     <div class="flex-1 overflow-x-auto overflow-y-hidden md:flex-none sm:overflow-x-hidden sm:overflow-y-scroll" h-full w-full>
       <div class="w-full flex gap-2 md:grid lg:grid-cols-2 md:grid-cols-1 lg:max-h-80dvh">
         <div
-          v-for="(model) of displayModels"
+          v-for="(model) of listedModels"
           :key="model.id"
           v-auto-animate
           relative gap-2
@@ -308,9 +370,41 @@ mmdDialog.onChange(handleAddMMDModel)
                     ]"
                     transition="colors duration-200 ease-in-out"
                   >
-                    <button flex items-center gap-1 outline-none @click="handleRemoveModel(model)">
+                    <button v-if="!model.cloudOnly" flex items-center gap-1 outline-none @click="handleRemoveModel(model)">
                       <div i-solar:trash-bin-minimalistic-bold-duotone />
                       <div>{{ t('settings.model-select.select-model.remove') }}</div>
+                    </button>
+                    <button v-else flex items-center gap-1 outline-none @click="displayModelStore.deleteCloudDisplayModel(model.id)">
+                      <div i-solar:cloud-cross-bold-duotone />
+                      <div>{{ t('settings.model-select.select-model.sync.delete-cloud') }}</div>
+                    </button>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="syncStatuses[model.id] === 'local-only' || syncStatuses[model.id] === 'failed'"
+                    :class="[
+                      'relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 text-base leading-none outline-none data-[disabled]:pointer-events-none sm:text-sm',
+                      'data-[highlighted]:bg-neutral-100/20',
+                      'text-white dark:text-white',
+                    ]"
+                    transition="colors duration-200 ease-in-out"
+                  >
+                    <button flex items-center gap-1 outline-none @click="displayModelStore.uploadDisplayModel(model.id)">
+                      <div i-solar:cloud-upload-bold-duotone />
+                      <div>{{ t('settings.model-select.select-model.sync.upload') }}</div>
+                    </button>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="syncStatuses[model.id] === 'synced' && !model.cloudOnly"
+                    :class="[
+                      'relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 text-base leading-none outline-none data-[disabled]:pointer-events-none sm:text-sm',
+                      'data-[highlighted]:bg-red-900/20 dark:data-[highlighted]:bg-red-100/20',
+                      'text-white dark:text-white data-[highlighted]:text-red-200 dark:data-[highlighted]:text-red-200',
+                    ]"
+                    transition="colors duration-200 ease-in-out"
+                  >
+                    <button flex items-center gap-1 outline-none @click="displayModelStore.deleteCloudDisplayModel(model.id)">
+                      <div i-solar:cloud-cross-bold-duotone />
+                      <div>{{ t('settings.model-select.select-model.sync.delete-cloud') }}</div>
                     </button>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -332,6 +426,18 @@ mmdDialog.onChange(handleAddMMDModel)
                 highlightDisplayModelCard && highlightDisplayModelCard === model.id ? 'ring-3 ring-primary-400' : 'ring-0 ring-transparent',
               ]"
             >
+            <div
+              v-else-if="model.cloudOnly"
+              :class="[
+                'h-full w-full flex flex-col items-center justify-center gap-2 rounded-xl',
+                'bg-neutral-100 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-600',
+                'transition-all duration-200 ease-in-out',
+                syncStatuses[model.id] === 'downloading' ? 'animate-pulse motion-reduce:animate-none' : '',
+                highlightDisplayModelCard && highlightDisplayModelCard === model.id ? 'ring-3 ring-primary-400' : 'ring-0 ring-transparent',
+              ]"
+            >
+              <div :class="[syncStatuses[model.id] === 'downloading' ? 'i-solar:cloud-download-bold-duotone' : 'i-solar:cloud-bold-duotone', 'text-4xl opacity-75']" />
+            </div>
             <div v-else bg="neutral-100 dark:neutral-900" relative h-full w-full flex flex-col items-center justify-center gap-2 overflow-hidden rounded-xl :class="[highlightDisplayModelCard && highlightDisplayModelCard === model.id ? 'ring-3 ring-primary-400' : 'ring-0 ring-transparent']" transition="all duration-200 ease-in-out">
               <div i-solar:question-square-bold-duotone text-4xl opacity-75 />
               <div translate-y="100%" absolute top-0 flex flex-col translate-x--7 rotate-45 scale-250 gap-0 opacity-5>
@@ -373,8 +479,15 @@ mmdDialog.onChange(handleAddMMDModel)
                 <div i-solar:tag-horizontal-bold />
                 <div>{{ mapFormatRenderer[model.format] }}</div>
               </div>
+              <div v-if="syncStatuses[model.id]" flex items-center gap-1 text="xs neutral-400 dark:neutral-600">
+                <div i-solar:cloud-bold />
+                <div>{{ t(`settings.model-select.select-model.sync.status.${syncStatuses[model.id]}`) }}</div>
+              </div>
+              <div v-if="syncErrors[model.id]" text="xs red-500" class="line-clamp-2">
+                {{ syncErrors[model.id] }}
+              </div>
             </div>
-            <Button class="hidden md:block" variant="secondary" @click="handlePick(model)">
+            <Button class="hidden md:block" @click="handlePick(model)">
               {{ t('settings.model-select.select-model.select') }}
             </Button>
           </div>

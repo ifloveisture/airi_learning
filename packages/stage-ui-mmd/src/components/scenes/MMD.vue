@@ -3,19 +3,19 @@
   * Root MMD scene component.
   *
   * Unlike the VRM renderer (which is declarative via TresJS), MMD is driven
-  * imperatively: MMDAnimationHelper owns the animation/IK/grant/physics step
-  * and must run in a hand-managed render loop. This component owns the
-  * WebGLRenderer, camera, lights, OrbitControls, and the per-frame pipeline,
-  * and exposes the same contract Stage.vue expects from every renderer
-  * (canvasElement / captureFrame / setEmotion).
+  * imperatively: the MMD runtime coordinates mixer, IK, grant, and physics in
+  * a hand-managed render loop. This component owns the WebGLRenderer, camera,
+  * lights, OrbitControls, and the per-frame pipeline, and exposes the same
+  * contract Stage.vue expects from every renderer.
 */
 
-import type { SkinnedMesh } from 'three'
+import type { SkinnedMesh, Texture } from 'three'
 
 import type { GazeOffset, MMDAnimationManager, MorphController } from '../../composables/mmd'
 import type { ResolvedMMDModel } from '../../utils/mmd-loader'
 
 import { errorMessageFrom } from '@moeru/std'
+import { coverRect } from '@proj-airi/stage-shared'
 import { Screen } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import {
@@ -25,22 +25,22 @@ import {
   Color,
   DirectionalLight,
   Group,
-  Mesh,
   NoToneMapping,
   PerspectiveCamera,
   Quaternion,
   Scene,
   SRGBColorSpace,
+  TextureLoader,
+  Vector2,
   Vector3,
   WebGLRenderer,
 } from 'three'
 import { OrbitControls } from 'three-stdlib'
-import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { onMounted, onUnmounted, ref, toRef, watch } from 'vue'
 
 import {
   createGazeController,
   createMMDAnimationManager,
-  createMMDLoaderContext,
   createMorphController,
   EYE_PITCH_LIMIT,
   EYE_YAW_LIMIT,
@@ -52,12 +52,25 @@ import {
 import { Emotion, EMOTION_VALUES } from '../../constants/emotions'
 import { useMMD } from '../../stores/mmd'
 import { loadMMDModelFromSource } from '../../utils/mmd-loader'
+import {
+  applyMMDMaterialOpacity,
+  collectMMDMaterials,
+  disposeMMDObject,
+  setMMDMaterialGlow,
+} from '../../utils/mmd-materials'
 
 const props = withDefaults(defineProps<{
+  /** The context that owns `currentAudioSource`. */
+  audioContext?: AudioContext
   modelSrc?: string
   modelId?: string
   paused?: boolean
   cursorPosition?: { x: number, y: number }
+  /**
+   * Scene painted behind the model, inside this canvas rather than under it, so one
+   * readback answers for the whole stage.
+   */
+  backgroundUrl?: string | null
   currentAudioSource?: AudioBufferSourceNode
   enableOrbitControls?: boolean
 }>(), {
@@ -112,18 +125,16 @@ let mesh: SkinnedMesh | undefined
 let morphs: MorphController | undefined
 let animation: MMDAnimationManager | undefined
 let emote: ReturnType<typeof useMMDEmote> | undefined
-// Dedicated loader for VMD motions (no textures, so no URL modifier needed),
-// plus the set of motion names already registered with the current model.
-let animationLoader: ReturnType<typeof createMMDLoaderContext> | undefined
+// Motion names already bound to the current model runtime.
 const registeredMotions = new Set<string>()
 const clock = new Clock()
 let rafHandle = 0
 
-// Lip-sync owns Vue lifecycle hooks, so it must be created during setup. It
-// is fed the live audio source and applied to whichever morphs are mounted.
-const audioRef = shallowRef<AudioBufferSourceNode | undefined>(props.currentAudioSource)
-watch(() => props.currentAudioSource, v => audioRef.value = v)
-const lipSync = useMMDLipSync(audioRef)
+// Lip-sync owns Vue lifecycle hooks, so it must be created during setup.
+const lipSync = useMMDLipSync(
+  toRef(props, 'audioContext'),
+  toRef(props, 'currentAudioSource'),
+)
 const blink = useMMDBlink()
 let gaze: ReturnType<typeof createGazeController> | undefined
 
@@ -195,60 +206,6 @@ function normalizeHex(hex: string): string {
   return /^#[0-9a-f]{8}$/i.test(hex) ? hex.slice(0, 7) : hex
 }
 
-/** Sets the albedo self-glow on every material (live, from the settings store). */
-function applyMaterialGlow(value: number) {
-  modelGroup?.traverse((object) => {
-    if (!(object instanceof Mesh))
-      return
-    const materials = Array.isArray(object.material) ? object.material : [object.material]
-    for (const material of materials) {
-      const mat = material as { emissiveIntensity?: number }
-      if (typeof mat.emissiveIntensity === 'number')
-        mat.emissiveIntensity = value
-    }
-  })
-}
-
-/** Collects the model's materials as descriptors for the settings UI. */
-function collectMaterials(): { name: string, label: string, index: number }[] {
-  const descriptors: { name: string, label: string, index: number }[] = []
-  let index = 0
-  modelGroup?.traverse((object) => {
-    if (!(object instanceof Mesh))
-      return
-    const materials = Array.isArray(object.material) ? object.material : [object.material]
-    for (const material of materials) {
-      descriptors.push({ name: material.name, label: material.name || `Material ${index}`, index })
-      index++
-    }
-  })
-  return descriptors
-}
-
-/**
- * Applies per-material opacity overrides (keyed by material name). Captures
- * each material's original `transparent` flag once so restoring full opacity
- * does not force-disable a material that was authored transparent.
- */
-function applyMaterialOpacity() {
-  const overrides = materialOpacity.value
-  modelGroup?.traverse((object) => {
-    if (!(object instanceof Mesh))
-      return
-    const materials = Array.isArray(object.material) ? object.material : [object.material]
-    for (const material of materials) {
-      const cached = material.userData.__origTransparent
-      const origTransparent = typeof cached === 'boolean'
-        ? cached
-        : (material.userData.__origTransparent = material.transparent ?? false)
-      const opacity = overrides[material.name] ?? 1
-      material.opacity = opacity
-      material.transparent = origTransparent || opacity < 1
-      material.needsUpdate = true
-    }
-  })
-}
-
 function setupScene() {
   const canvas = canvasRef.value!
   renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true })
@@ -259,6 +216,9 @@ function setupScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * renderScale.value)
 
   scene = new Scene()
+  // The scene is already chosen when the renderer mounts, so the watcher below never
+  // fires for it.
+  void syncBackground()
   camera = new PerspectiveCamera(cameraFov.value, 1, 0.1, 1000)
   camera.position.set(0, 1, 3)
 
@@ -303,6 +263,82 @@ function frameCamera() {
   controls.update()
 }
 
+let backgroundTexture: Texture | undefined
+
+/**
+ * Fits the scene over the canvas, matching the `cover` framing it had as a CSS layer.
+ *
+ * A background texture covers the viewport whatever its own shape, so the fit is
+ * expressed by sampling a smaller window of it rather than by placing a rectangle.
+ *
+ * Nothing is marked dirty: a background rebuilds its own texture matrix each frame,
+ * while marking the texture would re-upload it and recompile the background shader.
+ */
+function layoutBackground() {
+  if (!backgroundTexture || !renderer)
+    return
+
+  // `Texture.image` is whatever the loader produced; a decoded image carries its size.
+  const image = backgroundTexture.image as { width?: number, height?: number } | undefined
+  if (!image?.width || !image?.height)
+    return
+
+  const size = renderer.getSize(new Vector2())
+  if (!size.x || !size.y)
+    return
+
+  const rect = coverRect({ width: size.x, height: size.y }, { width: image.width, height: image.height })
+  backgroundTexture.repeat.set(size.x / rect.width, size.y / rect.height)
+  backgroundTexture.offset.set(-rect.x / rect.width, -rect.y / rect.height)
+}
+
+async function syncBackground() {
+  if (!scene)
+    return
+
+  const url = props.backgroundUrl
+  if (!url) {
+    scene.background = null
+    backgroundTexture?.dispose()
+    backgroundTexture = undefined
+    return
+  }
+
+  const owner = scene
+  // A scene that cannot decode leaves the stage as it is, rather than throwing where
+  // nothing is waiting to catch it.
+  let texture: Texture
+  try {
+    texture = await new TextureLoader().loadAsync(url)
+  }
+  catch {
+    return
+  }
+
+  // Scene art is authored in sRGB. Saying so keeps the renderer from encoding it a
+  // second time, and marks the background as already display-referred so tone mapping
+  // leaves it alone.
+  texture.colorSpace = SRGBColorSpace
+  // This renderer keeps three's premultiplied drawing buffer, and a background is
+  // written to it unblended, so the scene has to arrive premultiplied as well. Scene art
+  // is roughly half soft alpha, which is where the difference would show.
+  texture.premultiplyAlpha = true
+
+  // A later scene wins, and so does a later stage: both can be replaced while the
+  // texture loads.
+  if (props.backgroundUrl !== url || scene !== owner) {
+    texture.dispose()
+    return
+  }
+
+  backgroundTexture?.dispose()
+  backgroundTexture = texture
+  scene.background = texture
+  layoutBackground()
+}
+
+watch(() => props.backgroundUrl, () => void syncBackground())
+
 function resize() {
   if (!renderer || !camera || !canvasRef.value)
     return
@@ -313,6 +349,7 @@ function resize() {
   renderer.setSize(w, h, false)
   camera.aspect = w / h
   camera.updateProjectionMatrix()
+  layoutBackground()
 }
 
 function renderLoop() {
@@ -323,9 +360,9 @@ function renderLoop() {
     return
 
   if (animation) {
-    // One imperative step: animation mixer → IK → grant → physics.
+    // three-mmd preserves the required mixer → IK → grant → physics order.
     animation.update(delta)
-    // Apply AIRI-owned morphs after the helper so lip-sync/expression win
+    // Apply AIRI-owned morphs after the runtime so lip-sync/expression win
     // over any VMD mouth/expression keyframes.
     emote?.update(delta)
     blink.update(morphs, delta)
@@ -339,26 +376,20 @@ function renderLoop() {
 }
 
 function disposeModel() {
+  const runtimeDisposedByManager = animation !== undefined
   if (animation) {
     animation.dispose()
     animation = undefined
   }
+  if (!runtimeDisposedByManager)
+    resolved?.mmd.dispose()
+
   if (modelGroup && scene) {
     scene.remove(modelGroup)
-    modelGroup.traverse((obj) => {
-      if (obj instanceof Mesh) {
-        obj.geometry?.dispose?.()
-        const material = obj.material
-        if (Array.isArray(material))
-          material.forEach(m => m.dispose())
-        else
-          material?.dispose?.()
-      }
-    })
+    disposeMMDObject(modelGroup)
   }
   resolved?.dispose()
   registeredMotions.clear()
-  animationLoader = undefined
   modelGroup = undefined
   mesh = undefined
   morphs = undefined
@@ -390,8 +421,7 @@ async function syncMotions() {
       }
       const url = URL.createObjectURL(file)
       try {
-        animationLoader ??= createMMDLoaderContext()
-        const clip = await loadMMDAnimationClip(animationLoader.loader, url, mesh)
+        const clip = await loadMMDAnimationClip(url, mesh)
         animation.registerClip(descriptor.name, clip)
         registeredMotions.add(descriptor.name)
         if (clip.tracks.length === 0) {
@@ -423,7 +453,7 @@ async function loadModel(src: string) {
   disposeModel()
 
   try {
-    resolved = await loadMMDModelFromSource(src)
+    resolved = await loadMMDModelFromSource(src, { cacheKey: props.modelId })
     mesh = resolved.mesh
 
     modelGroup = new Group()
@@ -444,8 +474,9 @@ async function loadModel(src: string) {
     emote = useMMDEmote(morphs)
     gaze = createGazeController(mesh)
 
-    animation = createMMDAnimationManager(mesh, { physicsEnabled: physicsEnabled.value })
-    // No preset idle VMD ships yet; init with an empty clip so physics/IK run.
+    animation = createMMDAnimationManager(resolved.mmd, { physicsEnabled: physicsEnabled.value })
+    // No preset idle VMD ships yet; the runtime still advances solvers and
+    // physics without an animation action.
     await animation.init()
     animation.setIKEnabled(ikEnabled.value)
     animation.setGrantEnabled(grantEnabled.value)
@@ -454,9 +485,9 @@ async function loadModel(src: string) {
     // Ensure the camera aspect matches the live canvas before fitting.
     resize()
     frameCamera()
-    applyMaterialGlow(albedoGlow.value)
-    mmdStore.availableMaterials = collectMaterials()
-    applyMaterialOpacity()
+    setMMDMaterialGlow(modelGroup, albedoGlow.value)
+    mmdStore.availableMaterials = collectMMDMaterials(modelGroup)
+    applyMMDMaterialOpacity(modelGroup, materialOpacity.value)
 
     mmdStore.isModelLoaded = true
     componentState.value = 'mounted'
@@ -465,6 +496,7 @@ async function loadModel(src: string) {
     await syncMotions()
   }
   catch (err) {
+    disposeModel()
     componentState.value = 'pending'
     console.error('[mmd] failed to load model:', errorMessageFrom(err))
     emit('error', err)
@@ -501,6 +533,8 @@ onUnmounted(() => {
   resizeObserver?.disconnect()
   disposeModel()
   controls?.dispose()
+  backgroundTexture?.dispose()
+  backgroundTexture = undefined
   if (renderer) {
     renderer.dispose()
     renderer.forceContextLoss()
@@ -587,8 +621,14 @@ watch(renderScale, () => {
   renderer?.setPixelRatio(Math.min(window.devicePixelRatio, 2) * renderScale.value)
   resize()
 })
-watch(albedoGlow, () => applyMaterialGlow(albedoGlow.value))
-watch(materialOpacity, () => applyMaterialOpacity(), { deep: true })
+watch(albedoGlow, () => {
+  if (modelGroup)
+    setMMDMaterialGlow(modelGroup, albedoGlow.value)
+})
+watch(materialOpacity, () => {
+  if (modelGroup)
+    applyMMDMaterialOpacity(modelGroup, materialOpacity.value)
+}, { deep: true })
 
 defineExpose({
   canvasElement,

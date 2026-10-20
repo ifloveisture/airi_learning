@@ -1,27 +1,50 @@
+import type {} from 'pinia-plugin-synced'
+
 import { useLocalStorageManualReset } from '@proj-airi/stage-shared/composables'
 import { refManualReset } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, watch } from 'vue'
 
-import { useProvidersStore } from '../providers'
+import { useProviderStore } from '../providers/provider'
+import { useConsciousnessSettingsStore } from './consciousness-settings'
 
 export const useConsciousnessStore = defineStore('consciousness', () => {
-  const providersStore = useProvidersStore()
+  const providersStore = useProviderStore()
+  const settingsStore = useConsciousnessSettingsStore()
+
+  // Pinia synchronization owns live cross-window state. localStorage remains
+  // durable persistence, but storage events must not reflect state back into
+  // the store and publish another synchronized snapshot.
+  const persistenceOptions = { listenToStorageChanges: false }
 
   // State
-  const activeProvider = useLocalStorageManualReset<string>('settings/consciousness/active-provider', '')
-  const activeModel = useLocalStorageManualReset<string>('settings/consciousness/active-model', '')
-  const activeCustomModelName = useLocalStorageManualReset<string>('settings/consciousness/active-custom-model', '')
+  const activeProvider = useLocalStorageManualReset<string>('settings/consciousness/active-provider', '', persistenceOptions)
+  const activeModel = useLocalStorageManualReset<string>('settings/consciousness/active-model', '', persistenceOptions)
+  const activeCustomModelName = useLocalStorageManualReset<string>('settings/consciousness/active-custom-model', '', persistenceOptions)
   const expandedDescriptions = refManualReset<Record<string, boolean>>(() => ({}))
   const modelSearchQuery = refManualReset<string>('')
 
   // Computed properties
   const supportsModelListing = computed(() => {
-    return providersStore.findProviderMetadata(activeProvider.value)?.capabilities.listModels !== undefined
+    return providersStore.supportsModelListing(activeProvider.value)
   })
 
   const providerModels = computed(() => {
     return providersStore.getModelsForProvider(activeProvider.value)
+  })
+
+  function isOpenRouterProvider(provider: string) {
+    return providersStore.findProviderDefinition(provider)?.id === 'openrouter-ai'
+  }
+
+  const activeModelRequiresReasoning = computed(() => {
+    return isOpenRouterProvider(activeProvider.value)
+      && providerModels.value.find(model => model.id === activeModel.value)?.reasoning?.mandatory === true
+  })
+
+  const activeModelUsesProviderReasoningDefault = computed(() => {
+    return isOpenRouterProvider(activeProvider.value)
+      && !providerModels.value.some(model => model.id === activeModel.value)
   })
 
   const isLoadingActiveProviderModels = computed(() => {
@@ -31,6 +54,23 @@ export const useConsciousnessStore = defineStore('consciousness', () => {
   const activeProviderModelError = computed(() => {
     return providersStore.modelLoadError[activeProvider.value] || null
   })
+
+  const temperature = useLocalStorageManualReset<number>(
+    'settings/consciousness/active-temperature',
+    0.7,
+    persistenceOptions,
+  )
+
+  const topP = useLocalStorageManualReset<number>(
+    'settings/consciousness/active-top-p',
+    1.0,
+    persistenceOptions,
+  )
+
+  // Saved slider values do not imply consent to override provider defaults.
+  // All request paths consume these projections; disabled fields stay undefined.
+  const activeTemperature = computed(() => settingsStore.temperatureEnabled ? temperature.value : undefined)
+  const activeTopP = computed(() => settingsStore.topPEnabled ? topP.value : undefined)
 
   const filteredModels = computed(() => {
     if (!modelSearchQuery.value.trim()) {
@@ -59,7 +99,7 @@ export const useConsciousnessStore = defineStore('consciousness', () => {
   // provider's model and chat requests failed upstream with model_not_found.
   //
   // The watcher is synchronous on purpose: call sites assign the provider
-  // first and a new model right after (e.g. use-auth-provider-sync), so a
+  // first and a new model right after, so a
   // deferred reset would wipe the model they just chose. Synchronous flush
   // makes "set provider, then set model" a safe, ordered operation.
   //
@@ -73,33 +113,64 @@ export const useConsciousnessStore = defineStore('consciousness', () => {
   }, { flush: 'sync' })
 
   async function loadModelsForProvider(provider: string) {
-    if (providersStore.findProviderMetadata(provider)?.capabilities.listModels !== undefined) {
+    if (providersStore.supportsModelListing(provider)) {
       await providersStore.fetchModelsForProvider(provider)
     }
   }
 
   async function getModelsForProvider(provider: string) {
-    if (providersStore.findProviderMetadata(provider)?.capabilities.listModels !== undefined) {
+    if (providersStore.supportsModelListing(provider)) {
       return providersStore.getModelsForProvider(provider)
     }
 
     return []
   }
 
+  /** Resolves a provider with the reasoning mode shared by every Consciousness input path. */
+  async function getChatProviderInstance(provider: string) {
+    const selectedModel = providerModels.value.find(model => model.id === activeModel.value)
+    const useProviderReasoningDefault = provider === activeProvider.value
+      && isOpenRouterProvider(provider)
+      && (activeModelUsesProviderReasoningDefault.value || selectedModel?.reasoning?.mandatory === true)
+
+    // OpenRouter applies the model default when reasoning is mandatory or unknown.
+    if (useProviderReasoningDefault) {
+      return providersStore.getChatProviderInstance(provider)
+    }
+
+    return providersStore.getChatProviderInstance(provider, {
+      reasoning: settingsStore.reasoning ? 'enabled' : 'disabled',
+    })
+  }
+
   const configured = computed(() => {
     return !!activeProvider.value && !!activeModel.value
   })
 
-  function resetState() {
+  /** Whether chat can send. The `prompt-api` provider runs without a selected model. */
+  const chatReady = computed(() => {
+    return !!activeProvider.value && (!!activeModel.value || activeProvider.value === 'prompt-api')
+  })
+
+  async function resetState() {
     activeProvider.reset()
     resetModelSelection()
+    temperature.reset()
+    topP.reset()
+    await settingsStore.setTemperatureEnabled(false)
+    await settingsStore.setTopPEnabled(false)
   }
 
   return {
     // State
     configured,
+    chatReady,
     activeProvider,
     activeModel,
+    activeTemperature,
+    activeTopP,
+    temperature,
+    topP,
     customModelName: activeCustomModelName,
     expandedDescriptions,
     modelSearchQuery,
@@ -107,6 +178,8 @@ export const useConsciousnessStore = defineStore('consciousness', () => {
     // Computed
     supportsModelListing,
     providerModels,
+    activeModelRequiresReasoning,
+    activeModelUsesProviderReasoningDefault,
     isLoadingActiveProviderModels,
     activeProviderModelError,
     filteredModels,
@@ -115,6 +188,11 @@ export const useConsciousnessStore = defineStore('consciousness', () => {
     resetModelSelection,
     loadModelsForProvider,
     getModelsForProvider,
+    getChatProviderInstance,
     resetState,
   }
+}, {
+  synced: {
+    state: true,
+  },
 })

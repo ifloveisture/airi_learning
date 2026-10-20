@@ -1,4 +1,4 @@
-import type { ManualCaptureSection } from '../shared/types.ts'
+import type { ManualCaptureSection } from '../shared/types'
 
 const airiCardPattern = /sort|排序|upload|上传/i
 const providersPattern = /Chat|Speech|Transcription/i
@@ -99,7 +99,7 @@ export const settingsSection: ManualCaptureSection = {
     {
       id: 'hearing',
       kind: 'settings-route',
-      routePath: '/settings/modules/hearing',
+      routePath: '/settings/modules/hearing/transcriber',
       readyPattern: hearingPattern,
       rawCaptureName: '12-hearing',
       docAssetFileName: 'manual-hearing.avif',

@@ -1,15 +1,18 @@
 import type { Card, ccv3 } from '@proj-airi/ccc'
+import type { Live2DControlPolicy } from '@proj-airi/stage-ui-live2d/types/avatar-model'
 import type { GenericSchema, InferOutput } from 'valibot'
 
 import type { DisplayModel, useDisplayModelsStore } from '../stores/display-models'
-import type { AiriCard, AiriExtension } from '../stores/modules/airi-card'
+import type { AiriCard, AiriExtension } from '../types/airiCard'
 
 import JSZip from 'jszip'
 
 import { exportToJSON } from '@proj-airi/ccc'
 import { array, literal, object, optional, parse, picklist, record, string, unknown as unknownSchema } from 'valibot'
 
+import { wakeWordSchema } from '../libs/voice/wake-words'
 import { DisplayModelFormat } from '../stores/display-models'
+import { createAvatarModelReference } from './avatar-model'
 
 const FORMAT = 'airi-character-card'
 const VERSION = 1
@@ -18,11 +21,12 @@ const MANIFEST_PATH = 'manifest.json'
 const MODEL_EXT: Partial<Record<DisplayModelFormat, string>> = {
   [DisplayModelFormat.Live2dZip]: 'zip',
   [DisplayModelFormat.SpineZip]: 'zip',
+  [DisplayModelFormat.TachieZip]: 'tachie.zip',
   [DisplayModelFormat.VRM]: 'vrm',
 }
 
 type DisplayModelsStore = ReturnType<typeof useDisplayModelsStore>
-type ExportableCard = Card & { extensions: { airi: AiriExtension } }
+type ShareableAiriCard = Card & { extensions: { airi: AiriExtension } }
 
 const manifestSchema = object({
   format: literal(FORMAT),
@@ -31,8 +35,12 @@ const manifestSchema = object({
   resources: optional(object({
     displayModel: object({
       path: string(),
-      format: picklist([DisplayModelFormat.Live2dZip, DisplayModelFormat.SpineZip, DisplayModelFormat.VRM]),
+      format: picklist([DisplayModelFormat.Live2dZip, DisplayModelFormat.SpineZip, DisplayModelFormat.TachieZip, DisplayModelFormat.VRM]),
       name: string(),
+      controls: optional(object({
+        disabledExpressions: array(string()),
+        disabledMotions: array(string()),
+      })),
     }),
   })),
 })
@@ -68,10 +76,17 @@ export class AiriCardPackageError extends Error {
   }
 }
 
-/** Exports only the creation/edit form whitelist; provider globals and runtime state are never cloned. */
+/**
+ * Creates a portable AIRI Card share package.
+ *
+ * This format is intentionally not a lossless backup. It includes fields the
+ * creation editor lets the sender review, a sanitized AIRI module subset, and
+ * the selected display model. Unreviewed CCv3 metadata, custom extensions,
+ * agent prompts, and machine-local runtime references are omitted.
+ */
 export async function exportAiriCardPackage({ card, displayModelsStore }: { card: AiriCard, displayModelsStore: DisplayModelsStore }): Promise<Blob> {
   const exportableCard = cardFromAiriCard(card)
-  const displayModel = await exportDisplayModel(exportableCard, displayModelsStore)
+  const displayModel = await exportDisplayModel(card, displayModelsStore)
   const manifest = {
     format: FORMAT,
     version: VERSION,
@@ -89,18 +104,26 @@ export async function exportAiriCardPackage({ card, displayModelsStore }: { card
   return zip.generateAsync({ type: 'blob' })
 }
 
-/** Imports a package as sanitized CCv3 JSON; edited zip payloads cannot smuggle extra AIRI fields through. */
+/**
+ * Imports a portable package through the same share-field whitelist.
+ *
+ * The returned CCv3 object is safe to pass through the normal card creation
+ * path: package authors cannot smuggle custom extensions, agent prompts, or
+ * machine-local references into persisted AIRI state.
+ */
 export async function importAiriCardPackage({ file, displayModelsStore }: { file: File, displayModelsStore: DisplayModelsStore }): Promise<ccv3.CharacterCardV3> {
   const zip = await loadZip(file)
   const manifest = await readJsonFile(zip, MANIFEST_PATH, manifestSchema)
   const cardJson = await readJsonFile(zip, manifest.card.path, characterCardV3Schema)
-  const displayModelId = await importDisplayModel(zip, manifest, displayModelsStore)
+  const displayModel = await importDisplayModel(zip, manifest, displayModelsStore)
 
-  return exportToJSON(cardFromCharacterCard(cardJson, displayModelId))
+  return exportToJSON(cardFromCharacterCard(cardJson, displayModel, manifest.resources?.displayModel.controls))
 }
 
-async function exportDisplayModel(card: ExportableCard, store: DisplayModelsStore) {
-  const displayModelId = card.extensions.airi.modules.displayModelId
+async function exportDisplayModel(card: AiriCard, store: DisplayModelsStore) {
+  const extension = card.extensions.airi
+  const avatarModel = extension.avatarModels.find(model => model.id === extension.defaultAvatarModelId)
+  const displayModelId = avatarModel?.displayModelId
   if (!displayModelId)
     return
 
@@ -123,6 +146,12 @@ async function exportDisplayModel(card: ExportableCard, store: DisplayModelsStor
       format: model.format,
       name: payload.file.name,
       path: `models/body-model.${modelExt}`,
+      ...(avatarModel?.type === 'live2d'
+        ? { controls: {
+            disabledExpressions: [...avatarModel.config.controls.disabledExpressions],
+            disabledMotions: [...avatarModel.config.controls.disabledMotions],
+          } }
+        : {}),
     },
   }
 }
@@ -138,7 +167,7 @@ async function importDisplayModel(zip: JSZip, manifest: Manifest, store: Display
 
   try {
     const data = await file.async('arraybuffer')
-    return (await store.addDisplayModel(resource.format, new File([data], resource.name))).id
+    return await store.addDisplayModel(resource.format, new File([data], resource.name))
   }
   catch (cause) {
     throw error('invalid-file', 'Failed to import display model file', { cause })
@@ -167,7 +196,7 @@ async function readJsonFile<S extends GenericSchema>(zip: JSZip, path: string, s
   }
 }
 
-function cardFromAiriCard(card: AiriCard): ExportableCard {
+function cardFromAiriCard(card: AiriCard): ShareableAiriCard {
   return {
     name: card.name,
     nickname: card.nickname,
@@ -183,7 +212,11 @@ function cardFromAiriCard(card: AiriCard): ExportableCard {
   }
 }
 
-function cardFromCharacterCard(card: CharacterCardPackageJson, displayModelId?: string): ExportableCard {
+function cardFromCharacterCard(
+  card: CharacterCardPackageJson,
+  displayModel?: DisplayModel,
+  controls?: Live2DControlPolicy,
+): ShareableAiriCard {
   const data = card.data
   return {
     name: data.name,
@@ -196,18 +229,31 @@ function cardFromCharacterCard(card: CharacterCardPackageJson, displayModelId?: 
     notes: data.creator_notes,
     systemPrompt: data.system_prompt,
     postHistoryInstructions: data.post_history_instructions,
-    extensions: { airi: sanitizeAiri(data.extensions?.airi, displayModelId) },
+    extensions: { airi: sanitizeAiri(data.extensions?.airi, displayModel, controls) },
   }
 }
 
-function sanitizeAiri(value: unknown, displayModelIdOverride?: string): AiriExtension {
+function sanitizeAiri(
+  value: unknown,
+  displayModel?: DisplayModel,
+  controls?: Live2DControlPolicy,
+): AiriExtension {
   const source = isRecord(value) ? value : {}
   const modules = isRecord(source.modules) ? source.modules : {}
   const artistry = isRecord(modules.artistry) ? modules.artistry : {}
   const speech = isRecord(modules.speech) ? modules.speech : {}
-  const displayModelId = displayModelIdOverride ?? stringValue(modules.displayModelId)
+  const avatarModel = displayModel ? createAvatarModelReference(displayModel.id, displayModel.format) : undefined
+  if (avatarModel?.type === 'live2d' && controls) {
+    avatarModel.config.controls = {
+      disabledExpressions: [...controls.disabledExpressions],
+      disabledMotions: [...controls.disabledMotions],
+    }
+  }
 
   return {
+    ...(source.wakeWords === undefined ? {} : { wakeWords: parse(array(wakeWordSchema), source.wakeWords) }),
+    avatarModels: avatarModel ? [avatarModel] : [],
+    defaultAvatarModelId: avatarModel?.id,
     modules: {
       consciousness: providerModel(modules.consciousness),
       vision: providerModel(modules.vision),
@@ -215,7 +261,6 @@ function sanitizeAiri(value: unknown, displayModelIdOverride?: string): AiriExte
         ...providerModel(modules.speech),
         voice_id: stringValue(speech.voice_id),
       },
-      ...(displayModelId ? { displayModelId } : {}),
       artistry: {
         ...(typeof artistry.provider === 'string' ? { provider: artistry.provider } : {}),
         ...(typeof artistry.model === 'string' ? { model: artistry.model } : {}),

@@ -22,8 +22,9 @@ interface OPFSCacheMeta {
  *
  * v3: entry paths are now decoded via `decodeZipFileName`; bumping invalidates
  * caches written with the previous mojibake filenames so they are re-saved.
+ * v4: UTF-8 CJK paths without the ZIP UTF-8 flag no longer decode as GBK.
  */
-const live2DOpfsCacheVersion = 3
+const live2DOpfsCacheVersion = 4
 
 interface IgnoredArchivePathSegmentRule {
   matches: (segment: string) => boolean
@@ -44,12 +45,6 @@ function blobFromBytes(data: Uint8Array): Blob {
   const buffer = new ArrayBuffer(data.byteLength)
   new Uint8Array(buffer).set(data)
   return new Blob([buffer])
-}
-
-declare global {
-  interface FileSystemDirectoryHandle {
-    values: () => FileSystemDirectoryHandleAsyncIterator<FileSystemHandle>
-  }
 }
 
 export class OPFSCache {
@@ -266,7 +261,9 @@ export class OPFSCache {
 
     try {
       const res = await fetch(blobUrl)
-      const blob = await res.blob()
+      const blob = new Blob([await res.arrayBuffer()], {
+        type: res.headers.get('content-type') ?? '',
+      })
       const fileName = `${key}.zip`
       context.opfsZipBlob = blob
       context.source = [new File([blob], fileName)]

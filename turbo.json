@@ -5,11 +5,16 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "@proj-airi/server-schema#build": {
-      "cache": false
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
     },
     "@proj-airi/electron-vueuse#build": {
       "dependsOn": ["@proj-airi/electron-eventa#build"],
+      "outputs": ["dist/**"]
+    },
+    "@proj-airi/electron-native-backdrop#build": {
+      "cache": false,
       "outputs": ["dist/**"]
     }
   }
