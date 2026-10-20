@@ -1,7 +1,7 @@
 # 工程工具
 
 > **管什么**：Histoire、Devtools、Scenarios/Vishot、solutions 文档写法
-> **不管什么**：Vitest/lint/CI/i18n → `learning/工程横切/`；产品业务 → 各功能域
+> **不管什么**：Vitest/lint/CI/i18n → `learning/工程横切/`；Agent 指南 / Skills → `learning/AI协作/`；产品业务 → 各功能域
 
 ## 从这里开始
 
