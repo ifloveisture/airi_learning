@@ -12,8 +12,8 @@
 |----|------|
 | Stage 业务 TS | `packages/stage-ui/src/`（`composables/` · `stores/` · `services/` · `libs/`） |
 | 编排内核 | `packages/core-agent/src/` |
-| 云端路由 / 服务 | `apps/server/src/routes/` · `services/` · `utils/redis-keys.ts` |
-| 云端 HTTP / Redis | `apps/server/docs/ai-context/config-and-naming-conventions.md` |
+| 云端路由 / 服务 | `server/apps/api/src/routes/` · `services/`（Auth 在 `server/apps/auth`） |
+| 云端 HTTP / Redis | `server/apps/api/README.md` · `server/docs/ai/adr/` |
 | 桌宠 IPC 契约 | `apps/stage-tamagotchi/src/shared/eventa/` |
 | 扩展 Kit | `packages/plugin-sdk/` · `packages/plugin-sdk-tamagotchi/` · 包 README Kit 表 |
 | Hono 客户端 | `packages/stage-ui/src/composables/api.ts` |
@@ -214,7 +214,7 @@ Composable 选项常带 `Use` 前缀：`UseOptimisticMutationOptions`、`UseLoca
 
 ### HTTP 路径（云端）
 
-约定摘要（详见 `apps/server/docs/ai-context/config-and-naming-conventions.md`）：
+约定摘要（详见 `server/apps/api/README.md` · 相关 ADR；旧 config-and-naming 文已迁）：
 
 | 原则 | 做法 |
 |------|------|
@@ -316,7 +316,7 @@ Store 内可再缩短为 `fetchList` / `create`，由 store 调 service。
 
 ### Redis key 与 HTTP 头
 
-Redis（`apps/server/src/utils/redis-keys.ts`）：
+Redis（`server/apps/api/src/utils/redis-keys.ts` 与 `libs/redis/`）：
 
 - 运行时 key：`:` 分段，如 `user:{userId}:flux`、`lock:{domain}:…`、`config:{key}`
 - TS helper：`*RedisKey`，如 `userFluxRedisKey`、`lockRedisKey`、`ttsPoolInflightRedisKey`
@@ -388,4 +388,4 @@ Store 实现在 `.ts`；不含 `.vue`。
 - **本篇管**：`.ts` 文件与目录名；TS 变量 / 函数 / 常量 / 类型；HTTP · RPC · Eventa · Kit · Redis helper 命名
 - **本篇不管**：`.vue` 文件名与 SFC 组件名；Uno / CSS 类名；i18n key（见文案专题）；完整复抄 `AGENTS.md` 注释篇
 - **与工作室文档库**：跨栈默认以 Obsidian `命名规范/`（核心 · 类型 · API）为主；本篇为 **AIRI 仓辅证**。冲突时（尤其文件名 kebab vs 工作室 camelCase）**仓内跟邻域 + 本篇**，不要把 kebab 写回文档库默认
-- **云端路径 / Redis / 可观测字段**：以 `apps/server/docs/ai-context/` 对应篇为准；本页只收口 TS 侧怎么起名
+- **云端路径 / Redis / 可观测字段**：以 `server/docs/ai/adr/` · API README 为准；本页只收口 TS 侧怎么起名

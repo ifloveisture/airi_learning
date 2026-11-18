@@ -32,7 +32,7 @@
 
 | 现象 | 先查 |
 |------|------|
-| bot 连不上 | Hub URL/端口、防火墙、是否误连 `apps/server` |
+| bot 连不上 | Hub URL/端口、防火墙、是否误连云端 API（`server/apps/api`） |
 | 握手成功无业务 | 事件名是否协议版本一致、Stage 模块是否启用 |
 | 仅本地通 | 生产需稳定 Hub 进程与 env 密钥轮换 |
 
@@ -43,4 +43,4 @@
 ## 边界
 
 - **不是** Telegram/Satori 独立 Agent（那些自带 LLM loop）。
-- **不是** 云端 `apps/server` 登录计费。
+- **不是** 云端 Auth/API 登录计费。

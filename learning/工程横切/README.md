@@ -1,7 +1,7 @@
 # 工程横切
 
 > **管什么**：测试、质量门禁、DI/IPC 读码入口、i18n、发布/CI、错误处理、TS 命名、TS 格式化
-> **不管什么**：Histoire / Devtools / Vishot / solutions 写法 → `learning/工程工具/`；Agent 指南 / Skills / ai-context 分层 → `learning/AI协作/`；业务功能本身不在本域
+> **不管什么**：Histoire / Devtools / Vishot / solutions 写法 → `learning/工程工具/`；Agent 指南 / Skills / ADR 分层 → `learning/AI协作/`；业务功能本身不在本域
 
 本域专题**各自可跟读闭环**，正文内用「边界」段说明邻近概念，不要求先读其它功能域。
 

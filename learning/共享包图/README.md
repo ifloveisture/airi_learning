@@ -3,7 +3,7 @@
 > **管什么**：`packages/` 分组、频率、分层、「怎么用」、**任务速查 / 最短调用链**、演示入口
 > **不管什么**：单包完整 API 手册；`apps/` / `services/` / `plugins/` 产品面深读；CI/Histoire 操作细则 → `工程横切` / `工程工具`
 
-事实以各包 `package.json` 与源码为准（对照 `v0.11.3`）。组内包按**依赖数 → 触及文件**降序。
+事实以各包 `package.json` 与源码为准（对照 `v0.12.0-beta.5`）。组内包按**依赖数 → 触及文件**降序。
 
 ## 从这里开始
 
@@ -25,6 +25,7 @@
 | [Stage壳与共享页](./Stage壳与共享页.md) | §1 `stage-ui` / `shared` / `layouts` / `pages` |
 | [渲染与模型驱动](./渲染与模型驱动.md) | §2 `stage-ui-*` · `model-driver-*` |
 | [UI原语与字体](./UI原语与字体.md) | §3 `ui` · `font-*` |
+| [组件API查阅](./组件API查阅.md) | 不复抄全表：Histoire / ui-components 顺序 |
 | [编排内核与记忆](./编排内核与记忆.md) | §4 `ccc` · `stream-kit` · `core-*` |
 | [音频与听写管线](./音频与听写管线.md) | §5 `audio` · `pipelines` |
 | [Channel与插件协议](./Channel与插件协议.md) | §6 `server-sdk` / `runtime` · `plugin-*` |

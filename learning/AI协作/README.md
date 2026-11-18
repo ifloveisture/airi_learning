@@ -18,7 +18,7 @@
 | [配置分层](./配置分层.md) | 各配置文件落点与优先级感 |
 | [根指南](./根指南.md) | `AGENTS.md` · `CLAUDE.md` |
 | [Skills与命令](./Skills与命令.md) | `.agents/skills` · `.cursor/commands` |
-| [上下文文档](./上下文文档.md) | `docs/ai/context` · server `ai-context` · solutions |
+| [上下文文档](./上下文文档.md) | `docs/ai/context` · `server/docs/ai/adr` · solutions |
 | [包级策略](./包级策略.md) | 包/服务内 `AGENTS.md` · 多 Agent 分工 |
 
 ## 刻意不写（本域）
@@ -26,5 +26,5 @@
 | 项 | 说明 |
 |----|------|
 | 根 `AGENTS.md` 全文复写 | 只抽结构与「何时打开」；正文以仓库文件为准 |
-| server `docs/ai-context/` 全文 | 本域给地图；云端细读见 [云端服务/ai-context导读](../云端服务/ai-context导读.md) |
+| `server/docs/ai/adr/` 全文 | 本域给地图；云端细读见 [云端服务导读](../云端服务/ai-context导读.md) |
 | Cursor User Rules / 本机 Obsidian 规范 | 属本机工作流，不是本仓上游约定 |

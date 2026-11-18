@@ -1,6 +1,6 @@
 # Channel 事件速查（Bot）
 
-学 Bot 前先分清：**模块 Channel ≠ 云端 `apps/server`**。
+学 Bot 前先分清：**模块 Channel ≠ 云端 `server/apps/api` / Auth**。
 根脚本 `pnpm dev:server` 与桌面内嵌 `channel-server` 都是 **Channel Hub**（默认 `ws://localhost:6121/ws`）。
 
 详解见 [模块通道](../插件扩展/模块通道.md)。

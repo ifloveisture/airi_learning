@@ -13,5 +13,6 @@
 |------|------|
 | [学习路径](./学习路径.md) | 最短闭环 |
 | [Histoire与Devtools](./Histoire与Devtools.md) | 组件故事与调试页 |
+| [性能探查](./性能探查.md) | Devtools 性能页 / Overlay 入口 |
 | [场景截图](./场景截图.md) | scenarios、vishot |
 | [Solutions用法](./Solutions用法.md) | `docs/solutions/` 何时搜、怎么写 |

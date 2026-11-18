@@ -29,7 +29,7 @@
 ### 起 Channel Hub
 
 ```bash
-pnpm dev:server   # @proj-airi/server-runtime；不是 apps/server
+pnpm dev:server   # @proj-airi/server-runtime；不是云端 api-server
 ```
 
 桌宠也可内嵌 runtime（依赖图里有 `server-runtime`）。端到 `Client` 见上方「查阅」。

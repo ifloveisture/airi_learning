@@ -3,7 +3,7 @@
 > **管什么**：Channel 协议与 SDK、ExtensionHost、kits / gamelet、跟做
 > **边界**：具体 Discord 业务竖切在通道机器人域；云端 HTTP 在云端服务域；MCP 在本机操控域
 
-根脚本 `pnpm dev:server` = **Channel Hub（server-runtime）**，不是 `apps/server`。
+根脚本 `pnpm dev:server` = **Channel Hub（server-runtime）**，不是云端 `api-server`。
 
 ## 从这里开始
 

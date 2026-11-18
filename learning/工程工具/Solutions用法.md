@@ -10,7 +10,7 @@
 | 实现 / 调试 / 验收某模块前 | 先搜是否已有同类坑 |
 | 修完非显然 bug | 考虑补一篇（给后人） |
 | 查 UI 组件 API | 去 `docs/ai/context/ui-components.md`，不是 solutions |
-| 查云端计费架构 | 去 `apps/server/docs/ai-context/`，不是 solutions |
+| 查云端计费架构 | 去 `server/docs/ai/adr/` · [计费与Flux](../云端服务/计费与Flux.md)，不是 solutions |
 
 `AGENTS.md`：Documented solutions 按类别组织，带 YAML frontmatter；在已有记录的区域实现或排障时优先查阅。
 

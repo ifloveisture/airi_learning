@@ -15,6 +15,8 @@
 | [桌宠宿主](./桌宠宿主.md) | injeca · Eventa · 托盘 · Channel/插件/MCP/Godot |
 | [窗口地图](./窗口地图.md) | 各 BrowserWindow 路由与标志 |
 | [舞台与穿透](./舞台与穿透.md) | 主舞台 · 点击穿透 · Overlay |
+| [桌宠壳能力](./桌宠壳能力.md) | Glass · 全屏 Workspace · 天气/widgets · MCP HTTP |
+| [Kirie宿主](./Kirie宿主.md) | Godot+Kirie 旁路宿主（薄） |
 | [多窗同步](./多窗同步.md) | chat-sync BroadcastChannel |
 | [备忘](./备忘.md) | 易混点速查 |
 

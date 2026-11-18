@@ -38,5 +38,5 @@
 ## 边界
 
 - **本地 `pnpm build`**：开发构建，不等于 CI 发版。
-- **Channel Hub `pnpm dev:server`**：本机模块通道，不是 `apps/server` 云端发版。
+- **Channel Hub `pnpm dev:server`**：本机模块通道，不是 `api-server` 云端发版。
 - **云端 API 生产部署**：看团队实际主机（如 Railway 等）与 server 文档，不全写在上述 YAML。

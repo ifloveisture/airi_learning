@@ -1,6 +1,6 @@
 # AIRI 学习笔记索引
 
-> 对照：`0.11.3` · pnpm `10.33.0` · 桌面 **Electron**
+> 对照：`0.12.0-beta.5` · pnpm `11.24.0` · 桌面 **Electron**
 > 工程规范可参考 Obsidian：`前端工程化/`
 > 怎么写专题、如何少互引 → [文档结构约定](./文档结构约定.md)
 > 按角色选入口 → [角色入口](./角色入口.md)
@@ -28,7 +28,7 @@
 | [共享包图](./共享包图/) | `packages/` 分组索引 · 依赖分层 · 主消费者 |
 | 研究线 / 功能域 | **一端一文、一域一目录**；专题正文少链外域 |
 
-读功能域之前若卡在「何时触发 / 如何打分 / 队列怎么作废」，读 [算法主线/端到端闭环](./算法主线/端到端闭环.md)（规则摘要，不替代功能域读码）。
+读功能域之前若卡在「何时触发 / 如何打分 / 队列怎么作废」，读 [算法主线/学习路径](./算法主线/学习路径.md)（规则摘要，不替代功能域读码）。
 
 ## 当前研究线
 
@@ -39,14 +39,15 @@
 | **Bot（Channel）** | [通道机器人/学习路径](./通道机器人/学习路径.md) |
 | **独立 Agent** | [独立Agent/学习路径](./独立Agent/学习路径.md) |
 | **本机操控** | [本机操控/学习路径](./本机操控/学习路径.md) |
+| **世界接入** | [世界接入/学习路径](./世界接入/学习路径.md) |
 
-Web / 桌宠 / 移动挂在 [多端应用](./多端应用/)（移动仅 WIP 声明，见薄写清单）。
+Web / 桌宠 / 移动挂在 [多端应用](./多端应用/)（移动为 WIP 薄专章，见 [移动端/学习路径](./多端应用/移动端/学习路径.md)）。
 
 ## 功能域
 
 | 域 | 说明 |
 |----|------|
-| [算法主线](./算法主线/) | 横切判定规则 · [端到端闭环](./算法主线/端到端闭环.md) |
+| [算法主线](./算法主线/) | 横切判定规则 · [学习路径](./算法主线/学习路径.md) |
 | [角色对话](./角色对话/) | 编排 · 卡 · Provider · 记忆边界 · core-agent |
 | [语音交互](./语音交互/) | Hearing · Speech · 云端流式转写 |
 | [舞台呈现](./舞台呈现/) | Live2D · VRM · Spine/MMD · 动捕 · Godot |
@@ -57,10 +58,10 @@ Web / 桌宠 / 移动挂在 [多端应用](./多端应用/)（移动仅 WIP 声�
 | [通道机器人](./通道机器人/) | Discord · Runbook |
 | [独立Agent](./独立Agent/) | Telegram / Satori · Runbook |
 | [插件扩展](./插件扩展/) | Channel 协议 · ExtensionHost · 跟做 |
-| [云端服务](./云端服务/) | Auth · 计费 · Admin · 可观测 · ai-context |
+| [云端服务](./云端服务/) | Auth · 计费 · Admin · 可观测 · server ADR |
 | [工程横切](./工程横切/) | 测试 · 发布 · i18n · Eventa · TS 命名 |
 | [工程工具](./工程工具/) | Histoire · Devtools · Vishot · solutions |
-| [AI协作](./AI协作/) | Agent 指南 · Skills · ai-context · 包级策略 |
+| [AI协作](./AI协作/) | Agent 指南 · Skills · ADR/上下文 · 包级策略 |
 | [共享包图](./共享包图/) | packages 索引地图（找包再下钻） |
 
 ## 常用命令
@@ -69,7 +70,9 @@ Web / 桌宠 / 移动挂在 [多端应用](./多端应用/)（移动仅 WIP 声�
 pnpm install
 pnpm dev:web
 pnpm dev:tamagotchi
-pnpm -F @proj-airi/server dev    # 云端 API
-pnpm dev:server                  # Channel Hub（不是云端）
+pnpm -F @proj-airi/auth-server dev  # 云端 Auth
+pnpm -F @proj-airi/api-server dev   # 云端 API
+pnpm dev:backend                    # compose：DB/Redis + 常挂后端
+pnpm dev:server                     # Channel Hub（不是云端）
 pnpm -F @proj-airi/discord-bot start
 ```

@@ -9,12 +9,17 @@
 
 按「端 / 包」切开的笔记容易只见链路不见决策。本域回答：**同一条用户话语经过哪些阈值 / 队列 / 评分**。
 
+## 从这里开始
+
+→ [学习路径](./学习路径.md)
+
 ## 文档索引
 
 | 文档 | 串哪一段 |
 |------|----------|
+| [学习路径](./学习路径.md) | 先闭环再按问题下钻 |
 | [端到端闭环](./端到端闭环.md) | 总图：麦 → 聊天 → TTS → 口型；旁路 Bot / 独立 Agent |
-| [切段与播控](./切段与播控.md) | VAD · TranscriptBuffer · TTS chunker · 播放优先级 |
+| [切段与播控](./切段与播控.md) | VAD · Voice 句末 · TTS chunker · 播放优先级 |
 | [编排与上下文](./编排与上下文.md) | FIFO · generation 作废 · 上下文长度 |
 | [Agent调度](./Agent调度.md) | Telegram / Satori：arrival · tick · 单飞 · 硬顶 |
 | [记忆检索](./记忆检索.md) | Telegram：余弦 + 时间衰减 · Top-K |
@@ -24,7 +29,7 @@
 
 | 算法块 | 主要源码 |
 |--------|----------|
-| 切段 / 缓冲 / 播控 | `stage-ui/workers/vad` · `pipelines-audio` |
+| 切段 / 句末 / 播控 | `stage-ui/stores/voice` · `workers/vad` · `pipelines-audio` |
 | 编排队列 / 上下文 | `core-agent` · `stage-ui/stores/chat` |
 | Channel 桥进编排 | `context-bridge` → `ingest` |
 | 独立 loop + 记忆 | `services/telegram-bot` · `satori-bot` |
@@ -32,6 +37,4 @@
 
 ## 建议读法
 
-1. [端到端闭环](./端到端闭环.md)
-2. 按问题下钻专题
-3. 改参数 / 排「为什么没进聊天」时回本域阈值表，再打开对应源码文件
+按 [学习路径](./学习路径.md)：先 [端到端闭环](./端到端闭环.md)，再按问题下钻；改参数时回本域阈值表后再开源码。

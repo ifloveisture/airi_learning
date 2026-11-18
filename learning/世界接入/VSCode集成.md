@@ -1,6 +1,6 @@
 # VS Code 集成
 
-> IDE 把编辑上下文推给 AIRI Channel，不是云端 `apps/server`。
+> IDE 把编辑上下文推给 AIRI Channel，不是云端 Auth/API。
 > 总索引：[游戏与操控](./游戏与操控.md)；Channel 协议：[模块通道](../插件扩展/模块通道.md)。
 
 ## 两个包（别混）
@@ -24,7 +24,7 @@ VS Code 扩展 (vscode-airi)
 ```
 
 Hub：桌宠 `main/services/airi/channel-server`（端口 `SERVER_CHANNEL_PORT` 或 **6121**），或根脚本 `pnpm dev:server`。
-**不是** `pnpm -F @proj-airi/server dev` 那条云端 API。
+**不是** `pnpm -F @proj-airi/api-server dev` 那条云端 API。
 
 ## 推什么
 

@@ -21,7 +21,7 @@
 | 管什么 | 不管什么 |
 |--------|----------|
 | Channel 事件、Discord 桥、Stage 模块接线 | 独立 LLM loop（Telegram/Satori） |
-| `pnpm dev:server` / 桌面 channel-server | 云端账号计费（`apps/server`） |
+| `pnpm dev:server` / 桌面 channel-server | 云端账号计费（`server/apps/api` · Auth） |
 | | 游戏 Playwright / MCP 执行基板 |
 
 ## 命令
